@@ -8,7 +8,7 @@
 |---|---|
 | **What it is** | A working quality desk for a **fictional** biomedical test-equipment plant (NC, CAPA/8D, complaints, ASL/SCAR) plus a **live IQ/OQ/PQ runner** that tests that same desk. |
 | **What it’s for** | Show a hiring manager how you think about **post-market / manufacturing quality** and **computer system validation** — with numbers, aging, and pass/fail evidence, not empty templates. |
-| **How to use it** | `./setup.sh` then open the URL. Click Overview → a red CAPA → Validation → Run IQ/OQ/PQ. |
+| **How to use it** | `./setup.sh` then open the URL. Click Overview → a red CAPA → Validation → Run IQ/OQ/PQ. `./scripts/smoke.sh` proves the protocol. |
 
 **GitHub description:** What: quality desk + CSV binder for a demo med-device plant. For: Sr QE / SQE / validation screens. How: `./setup.sh`.
 
@@ -46,7 +46,9 @@ KPIs are **computed** (overdue = due date &lt; 2026-08-12 and not closed). Suppl
 | **OQ** | Unique IDs; empty NC blocked; viewer cannot write or close CAPA; QA Manager can close; audit grows; overdue math matches | Permission + data integrity |
 | **PQ** | Complaint → NC → CAPA → SCAR; supplier score drops after SCAR | Intended use |
 
-Open **Validation → Run IQ / OQ / PQ**. Screenshot the report for a resume packet.
+Open **Validation → Run IQ / OQ / PQ**. The plant dataset is restored afterward. Sign the report (typed name, demo). Screenshot + JSON for a resume packet.
+
+v1.1 adds: live Pareto/aging charts, list filters, collision-safe IDs, CAPA close gates (D4/D5/effectiveness), ECO list, protocol sandbox, RTM, demo e-sign, `scripts/smoke.sh`.
 
 ## Photos of results
 

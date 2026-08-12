@@ -1,9 +1,15 @@
-/* Mutations with permission checks — the OQ tests call these. */
+/* Mutations with permission checks and collision-safe IDs. */
 (function (g) {
   const S = () => g.HelixStore;
 
   function needWrite() {
     if (!S().canWrite()) throw new Error("permission: role is read-only (viewer)");
+  }
+
+  function alloc(prefix, list) {
+    const id = S().nextId(prefix, list);
+    if (list.some((r) => r.id === id)) throw new Error("id collision " + id);
+    return id;
   }
 
   function createNc(input) {
@@ -14,7 +20,7 @@
     if (!title) throw new Error("title required");
     if (!pn) throw new Error("product required");
     if (!desc) throw new Error("description required");
-    const id = "NC-2026-" + String(S().state.data.ncs.length + 17).padStart(3, "0");
+    const id = alloc("NC-2026-", S().state.data.ncs);
     const row = {
       id: id,
       date: S().state.data.meta.today,
@@ -41,8 +47,7 @@
 
   function createCapa(input) {
     needWrite();
-    const n = S().state.data.capas.length + 11;
-    const id = "CAPA-2026-" + String(n).padStart(2, "0");
+    const id = alloc("CAPA-2026-", S().state.data.capas);
     const due = input.due || "2026-09-30";
     S().state.data.capas.unshift({
       id: id,
@@ -73,20 +78,29 @@
     return id;
   }
 
-  function closeCapa(id, note) {
+  function closeCapa(id, note, opts) {
+    opts = opts || {};
     if (!S().canCloseCapa()) throw new Error("permission: only QA Manager may close a CAPA");
     const row = S().state.data.capas.find((c) => c.id === id);
     if (!row) throw new Error("CAPA not found");
+    if (row.status === "closed") throw new Error("CAPA already closed");
+    const n = String(note || "").trim();
+    if (!opts.protocol) {
+      if (!String(row.d4_root_cause || "").trim()) throw new Error("close blocked: D4 root cause required");
+      if (!String(row.d5_action || "").trim()) throw new Error("close blocked: D5 action required");
+      if (n.length < 20) throw new Error("close blocked: effectiveness note must be at least 20 characters");
+    }
     row.status = "closed";
     row.closed = S().state.data.meta.today;
-    row.effectiveness = note || row.effectiveness || "closed via protocol";
-    S().audit("close_capa", id);
+    row.effectiveness = n || row.effectiveness || "protocol waiver";
+    S().audit("close_capa", id + (opts.protocol ? " protocol_waiver" : ""));
     S().persist();
   }
 
   function createScar(input) {
     needWrite();
-    const id = "SCAR-2026-" + String(S().state.data.scars.length + 7).padStart(2, "0");
+    if (!input.supplier_id) throw new Error("supplier required");
+    const id = alloc("SCAR-2026-", S().state.data.scars);
     S().state.data.scars.unshift({
       id: id,
       date: S().state.data.meta.today,
@@ -106,7 +120,7 @@
 
   function createComplaint(input) {
     needWrite();
-    const id = "CMP-2026-" + String(S().state.data.complaints.length + 21).padStart(3, "0");
+    const id = alloc("CMP-2026-", S().state.data.complaints);
     S().state.data.complaints.unshift({
       id: id,
       date: S().state.data.meta.today,

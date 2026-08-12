@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 TODAY = "2026-08-12"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 # Fictional OEM — biomedical test equipment, not a real company.
 COMPANY = {
@@ -550,6 +550,18 @@ REQUIREMENTS = [
     {"id": "R-08", "text": "Supplier scorecard reflects open SCARs, PPM, on-time %, cert status.", "risk": "Medium — ASL decisions"},
     {"id": "R-09", "text": "Management review export includes record IDs present on screen.", "risk": "Medium — evidence pack"},
     {"id": "R-10", "text": "Demo banner states data are synthetic.", "risk": "High — someone treating this as real QMS"},
+    {"id": "R-11", "text": "Record IDs are allocated from max(existing)+1 and never collide.", "risk": "High — mixed records"},
+    {"id": "R-12", "text": "CAPA close requires root cause (D4), action (D5), and an effectiveness note ≥20 characters, except documented protocol waiver.", "risk": "High — paper close"},
+    {"id": "R-13", "text": "OQ/PQ mutations restore the production dataset after the run (sandbox).", "risk": "Medium — demo destroyed by protocol"},
+    {"id": "R-14", "text": "Foreign keys (NC↔CAPA↔SCAR↔complaint↔supplier) resolve or are null.", "risk": "High — broken traceability"},
+]
+
+CHANGE_CONTROLS = [
+    {"id": "ECO-2026-014", "date": "2026-08-07", "title": "IFU NP-310 rev E alarm wording", "status": "released", "linked": "CAPA-2026-10"},
+    {"id": "ECO-2026-011", "date": "2026-07-02", "title": "MES lockout overdue cal on bench 3", "status": "released", "linked": "CAPA-2026-04"},
+    {"id": "ECO-2026-009", "date": "2026-06-04", "title": "DA-900 harness polarity ICT + drawing rev C", "status": "released", "linked": "CAPA-2026-03"},
+    {"id": "ECO-2026-016", "date": "2026-08-07", "title": "ICT checksum gate IT-200 firmware", "status": "in verification", "linked": "CAPA-2026-08"},
+    {"id": "ECO-2026-018", "date": "2026-08-11", "title": "Barcode IFU rev at pack cell", "status": "open", "linked": "CAPA-2026-10"},
 ]
 
 
@@ -576,6 +588,23 @@ def main():
     for s in SUPPLIERS:
         s["score"] = supplier_score(s, SCARS)
 
+    ids = [n["id"] for n in NCS] + [c["id"] for c in CAPAS] + [s["id"] for s in SCARS]
+    ids += [c["id"] for c in COMPLAINTS] + [s["id"] for s in SUPPLIERS]
+    if len(ids) != len(set(ids)):
+        raise SystemExit("duplicate IDs in seed")
+    nc_ids = {n["id"] for n in NCS}
+    capa_ids = {c["id"] for c in CAPAS}
+    sup_ids = {s["id"] for s in SUPPLIERS}
+    for c in CAPAS:
+        for n in c["nc_ids"]:
+            if n not in nc_ids:
+                raise SystemExit("CAPA " + c["id"] + " missing NC " + n)
+    for n in NCS:
+        if n.get("supplier_id") and n["supplier_id"] not in sup_ids:
+            raise SystemExit("NC supplier FK " + n["id"])
+        if n.get("capa_id") and n["capa_id"] not in capa_ids:
+            raise SystemExit("NC capa FK " + n["id"])
+
     seed = {
         "meta": {
             "app": "Helix QMS Desk",
@@ -591,6 +620,7 @@ def main():
         "capas": CAPAS,
         "scars": SCARS,
         "complaints": COMPLAINTS,
+        "changes": CHANGE_CONTROLS,
         "requirements": REQUIREMENTS,
         "audit": [
             {"ts": "2026-08-12T08:00:00Z", "user": "system", "action": "seed_load", "detail": "DEMO dataset v1.0.0"},

@@ -9,6 +9,11 @@
       b.classList.toggle("on", b.getAttribute("data-view") === st.view && !st.selected);
     });
     document.getElementById("who").textContent = g.HelixStore.user().name + " · " + g.HelixStore.user().title;
+    const foot = document.getElementById("foot");
+    if (foot) {
+      foot.textContent =
+        "v" + st.data.meta.version + " · seed " + st.data.meta.checksum + " · " + st.data.meta.today + " · SYNTHETIC";
+    }
     let html = "";
     if (st.view === "overview") html = g.HelixRender.overview();
     else if (st.view === "ncs" && !st.selected) html = g.HelixRender.ncs();
@@ -69,36 +74,69 @@
       go("validation");
     }
     if (a === "print") window.print();
-    if (a === "close-capa") {
+    if (a === "dl-val") {
+      const r = g.HelixStore.state.valReport;
+      if (!r) return;
+      const blob = new Blob([JSON.stringify(r, null, 2)], { type: "application/json" });
+      const ael = document.createElement("a");
+      ael.href = URL.createObjectURL(blob);
+      ael.download = "helix-iq-oq-pq-report.json";
+      ael.click();
+    }
+  });
+
+  document.addEventListener("submit", (e) => {
+    if (e.target.id === "nc-form") {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const err = document.getElementById("form-err");
       try {
-        g.HelixApp.closeCapa(act.getAttribute("data-id"), "Closed from desk UI");
+        const id = g.HelixApp.createNc({
+          title: fd.get("title"),
+          pn: fd.get("pn"),
+          description: fd.get("description"),
+          severity: fd.get("severity"),
+        });
+        g.HelixStore.state.flash = "Saved " + id;
+        go("ncs", id);
+      } catch (ex) {
+        err.hidden = false;
+        err.textContent = ex.message;
+      }
+      return;
+    }
+    if (e.target.id === "close-capa-form") {
+      e.preventDefault();
+      const err = document.getElementById("close-err");
+      try {
+        g.HelixApp.closeCapa(e.target.getAttribute("data-id"), new FormData(e.target).get("note"));
         g.HelixStore.state.flash = "CAPA closed.";
         paint();
-      } catch (err) {
-        g.HelixStore.state.flash = err.message;
+      } catch (ex) {
+        err.hidden = false;
+        err.textContent = ex.message;
+      }
+      return;
+    }
+    if (e.target.id === "sign-form") {
+      e.preventDefault();
+      try {
+        g.HelixVal.sign(new FormData(e.target).get("name"));
+        g.HelixStore.state.flash = "Report signed (demo).";
+        paint();
+      } catch (ex) {
+        g.HelixStore.state.flash = ex.message;
         paint();
       }
     }
   });
 
-  document.addEventListener("submit", (e) => {
-    if (e.target.id !== "nc-form") return;
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const err = document.getElementById("form-err");
-    try {
-      const id = g.HelixApp.createNc({
-        title: fd.get("title"),
-        pn: fd.get("pn"),
-        description: fd.get("description"),
-        severity: fd.get("severity"),
-      });
-      g.HelixStore.state.flash = "Saved " + id;
-      go("ncs", id);
-    } catch (ex) {
-      err.hidden = false;
-      err.textContent = ex.message;
-    }
+  document.addEventListener("input", (e) => {
+    if (e.target.id !== "q") return;
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll("tbody tr").forEach((tr) => {
+      tr.hidden = q.length > 0 && !tr.textContent.toLowerCase().includes(q);
+    });
   });
 
   document.getElementById("role").addEventListener("change", (e) => {

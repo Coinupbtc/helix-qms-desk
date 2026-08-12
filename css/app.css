@@ -92,6 +92,30 @@ input, select, textarea {
 .plain { padding-left: 1.2em; }
 select#role { min-height: 44px; font-size: 16px; }
 
+.toolbar { margin: 8px 0 12px; }
+.toolbar input { max-width: 420px; }
+.chart { width: 100%; max-width: 360px; height: auto; }
+.nums { font-variant-numeric: tabular-nums; font-family: ui-sans-serif, system-ui, sans-serif; }
+.link {
+  background: none; border: 0; color: var(--accent); text-decoration: underline;
+  cursor: pointer; font: inherit; min-height: 44px; padding: 0 4px;
+}
+.closebox { margin-top: 12px; max-width: 36em; }
+.foot {
+  padding: 16px var(--safe-r) 24px var(--safe-l);
+  font: 12px/1.4 ui-sans-serif, system-ui, sans-serif; color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+.skip {
+  position: absolute; left: -999px; top: 8px;
+  background: var(--accent); color: #fff; padding: 8px 12px; z-index: 20;
+}
+.skip:focus { left: 8px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid #1e4d7b; outline-offset: 2px;
+}
+.kpi .n { font-variant-numeric: tabular-nums; font-family: ui-sans-serif, system-ui, sans-serif; }
+
 @media (max-width: 480px) {
   .split { grid-template-columns: 1fr; }
   .hero h1 { font-size: 1.35rem; }

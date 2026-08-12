@@ -1,4 +1,4 @@
-/* IQ / OQ / PQ against the live desk. Evidence is pass/fail + notes, not theater. */
+/* IQ / OQ / PQ. OQ/PQ run in a snapshot so the plant desk is not destroyed. */
 (function (g) {
   function rec(id, req, title, fn) {
     let pass = false;
@@ -12,6 +12,15 @@
       evidence = String(e && e.message ? e.message : e);
     }
     return { id: id, req: req, title: title, pass: pass, evidence: evidence };
+  }
+
+  function env() {
+    return {
+      ua: typeof navigator !== "undefined" ? navigator.userAgent : "n/a",
+      tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      href: typeof location !== "undefined" ? location.href.split("?")[0] : "",
+      viewport: (typeof innerWidth !== "undefined" ? innerWidth : 0) + "x" + (typeof innerHeight !== "undefined" ? innerHeight : 0),
+    };
   }
 
   function runIq() {
@@ -35,30 +44,34 @@
             ", SUP " + d.suppliers.length + ", CMP " + d.complaints.length,
         };
       }),
-      rec("IQ-04", "R-10", "Synthetic-data disclaimer present on company record", () => ({
+      rec("IQ-04", "R-10", "Synthetic-data disclaimer present", () => ({
         pass: /SYNTHETIC/i.test(d.meta.company.disclaimer),
         evidence: d.meta.company.disclaimer.slice(0, 80),
+      })),
+      rec("IQ-05", "R-01", "All seed IDs unique", () => ({
+        pass: g.HelixKpi.uniqueIds(d),
+        evidence: "uniqueIds=" + g.HelixKpi.uniqueIds(d),
+      })),
+      rec("IQ-06", "R-14", "Foreign keys resolve", () => ({
+        pass: g.HelixKpi.fkOk(d),
+        evidence: "fkOk=" + g.HelixKpi.fkOk(d),
+      })),
+      rec("IQ-07", "R-10", "Change-control family present", () => ({
+        pass: (d.changes || []).length >= 3,
+        evidence: "ECO n=" + (d.changes || []).length,
       })),
     ];
   }
 
   function runOq() {
     const S = g.HelixStore;
-    const savedRole = S.state.role;
     const tests = [];
 
-    tests.push(rec("OQ-01", "R-01", "New NC gets a unique ID", () => {
+    tests.push(rec("OQ-01", "R-11", "Two new NCs get distinct IDs", () => {
       S.state.role = "quality_engineer";
-      const before = S.state.data.ncs.map((n) => n.id);
-      const id = g.HelixApp.createNc({
-        title: "OQ unique-id probe",
-        pn: "PX-400",
-        description: "Protocol OQ-01",
-        severity: "minor",
-        source: "protocol",
-      });
-      const dup = before.includes(id);
-      return { pass: !!id && !dup, evidence: "created " + id };
+      const a = g.HelixApp.createNc({ title: "OQ-01a", pn: "PX-400", description: "Protocol OQ-01 a" });
+      const b = g.HelixApp.createNc({ title: "OQ-01b", pn: "PX-400", description: "Protocol OQ-01 b" });
+      return { pass: a !== b, evidence: a + " vs " + b };
     }));
 
     tests.push(rec("OQ-02", "R-02", "Empty NC description is rejected", () => {
@@ -88,7 +101,7 @@
       const open = S.state.data.capas.find((c) => c.status !== "closed");
       let blocked = false;
       try {
-        g.HelixApp.closeCapa(open.id);
+        g.HelixApp.closeCapa(open.id, "xxxxxxxxxxxxxxxxxxxx");
       } catch (e) {
         blocked = true;
       }
@@ -96,37 +109,50 @@
       return { pass: blocked && stillOpen, evidence: open.id + " remains " + S.state.data.capas.find((c) => c.id === open.id).status };
     }));
 
-    tests.push(rec("OQ-05", "R-03", "QA Manager can close a CAPA", () => {
+    tests.push(rec("OQ-05", "R-12", "Close without D4 is rejected", () => {
       S.state.role = "qa_manager";
-      const open = S.state.data.capas.find((c) => c.status !== "closed" && c.id !== "CAPA-2026-09");
-      const id = open.id;
-      g.HelixApp.closeCapa(id, "OQ-05 protocol close — effectiveness waived for test record");
+      const id = g.HelixApp.createCapa({ problem: "OQ-05 hollow CAPA", d4_root_cause: "", d5_action: "do something" });
+      let blocked = false;
+      try {
+        g.HelixApp.closeCapa(id, "Effectiveness note long enough here");
+      } catch (e) {
+        blocked = /D4/i.test(String(e.message));
+      }
+      return { pass: blocked, evidence: blocked ? id + " close blocked" : id + " closed without D4" };
+    }));
+
+    tests.push(rec("OQ-06", "R-03", "QA Manager can close a complete CAPA (protocol waiver)", () => {
+      S.state.role = "qa_manager";
+      const id = g.HelixApp.createCapa({
+        problem: "OQ-06 closable",
+        d4_root_cause: "cause",
+        d5_action: "action",
+      });
+      g.HelixApp.closeCapa(id, "protocol", { protocol: true });
       const row = S.state.data.capas.find((c) => c.id === id);
       return { pass: row.status === "closed", evidence: id + " status=" + row.status };
     }));
 
-    tests.push(rec("OQ-06", "R-06", "Audit trail grows and has no delete control", () => {
+    tests.push(rec("OQ-07", "R-06", "Audit trail grows and has no delete control", () => {
       const n = S.state.data.audit.length;
-      S.audit("oq_probe", "OQ-06");
+      S.audit("oq_probe", "OQ-07");
       const grew = S.state.data.audit.length === n + 1;
       const hasDelete = !!document.querySelector("[data-audit-delete]");
-      return { pass: grew && !hasDelete, evidence: "audit len " + S.state.data.audit.length + ", delete control=" + hasDelete };
+      return { pass: grew && !hasDelete, evidence: "audit len " + S.state.data.audit.length + ", delete=" + hasDelete };
     }));
 
-    tests.push(rec("OQ-07", "R-07", "Overdue CAPA count matches due-date arithmetic", () => {
+    tests.push(rec("OQ-08", "R-07", "Overdue CAPA count matches due-date arithmetic", () => {
       const k = g.HelixKpi.kpis();
       const today = S.state.data.meta.today;
       const manual = S.state.data.capas.filter((c) => c.status !== "closed" && c.due < today).length;
       return { pass: k.overdueCapa === manual, evidence: "kpi=" + k.overdueCapa + " manual=" + manual };
     }));
 
-    S.state.role = savedRole;
     return tests;
   }
 
   function runPq() {
     const S = g.HelixStore;
-    const savedRole = S.state.role;
     S.state.role = "quality_engineer";
     const tests = [];
 
@@ -151,6 +177,8 @@
         problem: "PQ chain — latch from field",
         nc_ids: [nc],
         supplier_id: "SUP-01",
+        d4_root_cause: "tool wear",
+        d5_action: "SCAR + incoming gap check",
       });
       const scar = g.HelixApp.createScar({
         supplier_id: "SUP-01",
@@ -158,8 +186,8 @@
         capa_id: capa,
         issue: "PQ SCAR for housing latch",
       });
-      const ok = cmp && nc && capa && scar;
-      return { pass: ok, evidence: [cmp, nc, capa, scar].join(" → ") };
+      const fk = g.HelixKpi.fkOk(S.state.data);
+      return { pass: cmp && nc && capa && scar && fk, evidence: [cmp, nc, capa, scar].join(" → ") };
     }));
 
     tests.push(rec("PQ-02", "R-08", "Supplier score moves after open SCAR", () => {
@@ -173,35 +201,74 @@
       return { pass: after < before, evidence: "Midwest Fastener " + before + " → " + after };
     }));
 
-    S.state.role = savedRole;
     return tests;
   }
 
+  function rtm(all) {
+    const map = {};
+    all.forEach((t) => {
+      map[t.req] = map[t.req] || [];
+      map[t.req].push(t.id + (t.pass ? " PASS" : " FAIL"));
+    });
+    return map;
+  }
+
   function runAll() {
+    const S = g.HelixStore;
     const started = new Date().toISOString();
-    const iq = runIq();
-    const oq = runOq();
-    const pq = runPq();
+    const savedRole = S.state.role;
+    const snap = S.clone(S.state.data);
+    let iq = [];
+    let oq = [];
+    let pq = [];
+    try {
+      iq = runIq();
+      oq = runOq();
+      pq = runPq();
+    } finally {
+      S.state.data = snap;
+      S.state.role = savedRole;
+      S.persist();
+    }
+    const protocolGone = !S.state.data.ncs.some((n) => /OQ-01/.test(n.title || ""));
+    const restoreRec = rec("OQ-09", "R-13", "Dataset restored after protocol", () => ({
+      pass: protocolGone && S.state.data.ncs.length === snap.ncs.length,
+      evidence: "protocol NCs gone=" + protocolGone + " ncs=" + S.state.data.ncs.length,
+    }));
+    oq = oq.concat([restoreRec]);
     const all = iq.concat(oq, pq);
-    const failed = all.filter((t) => !t.pass);
+    const failed2 = all.filter((t) => !t.pass);
     const report = {
       started: started,
       finished: new Date().toISOString(),
-      executor: g.HelixStore.user().name,
-      role: g.HelixStore.state.role,
-      version: g.HelixStore.state.data.meta.version,
-      checksum: g.HelixStore.state.data.meta.checksum,
+      executor: S.user().name,
+      role: savedRole,
+      version: S.state.data.meta.version,
+      checksum: S.state.data.meta.checksum,
+      env: env(),
       iq: iq,
       oq: oq,
       pq: pq,
-      pass: failed.length === 0,
-      failed: failed.map((t) => t.id),
-      totals: { n: all.length, pass: all.length - failed.length, fail: failed.length },
+      rtm: rtm(all),
+      pass: failed2.length === 0,
+      failed: failed2.map((t) => t.id),
+      totals: { n: all.length, pass: all.length - failed2.length, fail: failed2.length },
+      signed: S.state.valReport && S.state.valReport.signed ? S.state.valReport.signed : null,
     };
-    g.HelixStore.state.valReport = report;
-    g.HelixStore.audit("validation_run", report.pass ? "PASS " + report.totals.pass + "/" + report.totals.n : "FAIL " + report.failed.join(","));
+    S.state.valReport = report;
+    S.audit("validation_run", report.pass ? "PASS " + report.totals.pass + "/" + report.totals.n : "FAIL " + report.failed.join(","));
     return report;
   }
 
-  g.HelixVal = { runAll: runAll };
+  function sign(name) {
+    const r = g.HelixStore.state.valReport;
+    if (!r) throw new Error("run protocol before signing");
+    const n = String(name || "").trim();
+    if (n.length < 3) throw new Error("typed name required (demo e-sign)");
+    r.signed = { name: n, ts: new Date().toISOString(), meaning: "I executed this protocol on the Helix DEMO system" };
+    g.HelixStore.audit("validation_sign", n);
+    return r;
+  }
+
+  g.HelixVal = { runAll: runAll, sign: sign, env: env };
 })(window);

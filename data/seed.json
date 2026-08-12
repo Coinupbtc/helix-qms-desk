@@ -1,7 +1,7 @@
 {
   "meta": {
     "app": "Helix QMS Desk",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "generated": "2026-08-12",
     "company": {
       "name": "Helix Biomedical Instruments",
@@ -10,7 +10,7 @@
       "disclaimer": "SYNTHETIC demonstration dataset. Not customer, complaint, supplier, or CAPA records from any real employer."
     },
     "today": "2026-08-12",
-    "checksum": "ac32a4c78caa83fe"
+    "checksum": "0bfd40332f756021"
   },
   "users": [
     {
@@ -887,6 +887,43 @@
       "closed": null
     }
   ],
+  "changes": [
+    {
+      "id": "ECO-2026-014",
+      "date": "2026-08-07",
+      "title": "IFU NP-310 rev E alarm wording",
+      "status": "released",
+      "linked": "CAPA-2026-10"
+    },
+    {
+      "id": "ECO-2026-011",
+      "date": "2026-07-02",
+      "title": "MES lockout overdue cal on bench 3",
+      "status": "released",
+      "linked": "CAPA-2026-04"
+    },
+    {
+      "id": "ECO-2026-009",
+      "date": "2026-06-04",
+      "title": "DA-900 harness polarity ICT + drawing rev C",
+      "status": "released",
+      "linked": "CAPA-2026-03"
+    },
+    {
+      "id": "ECO-2026-016",
+      "date": "2026-08-07",
+      "title": "ICT checksum gate IT-200 firmware",
+      "status": "in verification",
+      "linked": "CAPA-2026-08"
+    },
+    {
+      "id": "ECO-2026-018",
+      "date": "2026-08-11",
+      "title": "Barcode IFU rev at pack cell",
+      "status": "open",
+      "linked": "CAPA-2026-10"
+    }
+  ],
   "requirements": [
     {
       "id": "R-01",
@@ -937,6 +974,26 @@
       "id": "R-10",
       "text": "Demo banner states data are synthetic.",
       "risk": "High \u2014 someone treating this as real QMS"
+    },
+    {
+      "id": "R-11",
+      "text": "Record IDs are allocated from max(existing)+1 and never collide.",
+      "risk": "High \u2014 mixed records"
+    },
+    {
+      "id": "R-12",
+      "text": "CAPA close requires root cause (D4), action (D5), and an effectiveness note \u226520 characters, except documented protocol waiver.",
+      "risk": "High \u2014 paper close"
+    },
+    {
+      "id": "R-13",
+      "text": "OQ/PQ mutations restore the production dataset after the run (sandbox).",
+      "risk": "Medium \u2014 demo destroyed by protocol"
+    },
+    {
+      "id": "R-14",
+      "text": "Foreign keys (NC\u2194CAPA\u2194SCAR\u2194complaint\u2194supplier) resolve or are null.",
+      "risk": "High \u2014 broken traceability"
     }
   ],
   "audit": [

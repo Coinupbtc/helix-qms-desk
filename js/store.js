@@ -1,6 +1,6 @@
 /* Live QMS state. Seed is synthetic; mutations stay in this session unless saved. */
 (function (g) {
-  const KEY = "helix-qms-desk-v1";
+    const KEY = "helix-qms-desk-v2";
 
   function clone(x) {
     return JSON.parse(JSON.stringify(x));

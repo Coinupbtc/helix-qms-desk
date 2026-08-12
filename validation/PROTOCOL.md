@@ -1,10 +1,10 @@
-# IQ / OQ / PQ protocols (Helix QMS Desk)
+# IQ / OQ / PQ protocols (Helix QMS Desk v1.1)
 
-Executed in-app: **Validation → Run IQ / OQ / PQ**. This file is the paper twin.
+Executed in-app: **Validation → Run IQ / OQ / PQ**. OQ/PQ mutations are **sandboxed** (dataset restored).
 
 ## Intended use
 
-Quality engineers at a biomedical test-equipment manufacturer log NCs, CAPAs, complaints, and SCARs; QA Managers close CAPAs; viewers inspect only.
+Quality engineers log NCs, CAPAs, complaints, and SCARs; QA Managers close CAPAs (D4 + D5 + effectiveness note); viewers inspect only.
 
 ## IQ
 
@@ -12,26 +12,31 @@ Quality engineers at a biomedical test-equipment manufacturer log NCs, CAPAs, co
 |---|---|
 | IQ-01 | App version matches shipped seed |
 | IQ-02 | Seed checksum matches |
-| IQ-03 | NC, CAPA, SCAR, supplier, complaint families loaded |
-| IQ-04 | SYNTHETIC disclaimer present |
+| IQ-03 | Record families loaded |
+| IQ-04 | SYNTHETIC disclaimer |
+| IQ-05 | All IDs unique |
+| IQ-06 | Foreign keys resolve |
+| IQ-07 | Change-control family present |
 
 ## OQ
 
 | ID | Check |
 |---|---|
-| OQ-01 | New NC unique ID |
+| OQ-01 | Two new NCs, distinct IDs |
 | OQ-02 | Empty description rejected |
 | OQ-03 | Viewer cannot create NC |
 | OQ-04 | Viewer cannot close CAPA |
-| OQ-05 | QA Manager can close CAPA |
-| OQ-06 | Audit trail appends; no delete control |
-| OQ-07 | Overdue CAPA KPI matches due dates |
+| OQ-05 | Close without D4 rejected |
+| OQ-06 | QA Manager close with protocol waiver |
+| OQ-07 | Audit trail appends; no delete control |
+| OQ-08 | Overdue KPI matches due dates |
+| OQ-09 | Dataset restored after protocol |
 
 ## PQ
 
 | ID | Check |
 |---|---|
-| PQ-01 | Complaint → NC → CAPA → SCAR |
+| PQ-01 | Complaint → NC → CAPA → SCAR + FK still ok |
 | PQ-02 | Supplier score decreases after open SCAR |
 
-Deviations: any fail is listed on the execution report. Reset demo data and re-run.
+Sign the on-screen report (typed name, demo only). Download JSON for the evidence pack.
