@@ -17,7 +17,7 @@
 ## Try it
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/Coinupbtc/helix-qms-desk.git
 cd helix-qms-desk
 chmod +x setup.sh
 ./setup.sh
