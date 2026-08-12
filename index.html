@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Helix QMS Desk — DEMO</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="banner">SYNTHETIC demonstration — not real customer, complaint, supplier, or CAPA records.</div>
+  <header class="app">
+    <div>
+      <h1>Helix QMS Desk</h1>
+      <div class="meta" id="who">—</div>
+    </div>
+    <label class="meta">Role
+      <select id="role" aria-label="Role">
+        <option value="viewer">Viewer (read-only)</option>
+        <option value="quality_engineer" selected>Quality Engineer</option>
+        <option value="qa_manager">QA Manager</option>
+      </select>
+    </label>
+  </header>
+  <nav aria-label="Primary">
+    <button type="button" data-view="overview" class="on">Overview</button>
+    <button type="button" data-view="ncs">NCs</button>
+    <button type="button" data-view="capas">CAPA</button>
+    <button type="button" data-view="complaints">Complaints</button>
+    <button type="button" data-view="suppliers">Suppliers</button>
+    <button type="button" data-view="scars">SCARs</button>
+    <button type="button" data-view="validation">Validation</button>
+    <button type="button" data-view="reports">Review pack</button>
+  </nav>
+  <div id="flash" hidden></div>
+  <main id="main"></main>
+  <script src="js/seed.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/kpis.js"></script>
+  <script src="js/actions.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/validation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+#!/usr/bin/env python3
+"""Build internally consistent DEMO plant data for Helix Biomedical Instruments.
+
+All names, lots, and complaints are synthetic. Nothing is copied from a real QMS.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+
+TODAY = "2026-08-12"
+APP_VERSION = "1.0.0"
+
+# Fictional OEM — biomedical test equipment, not a real company.
+COMPANY = {
+    "name": "Helix Biomedical Instruments",
+    "site": "St. Charles, MO (DEMO plant)",
+    "qms": "ISO 13485:2016 + ISO 9001:2015 (demonstration only)",
+    "disclaimer": (
+        "SYNTHETIC demonstration dataset. Not customer, complaint, supplier, "
+        "or CAPA records from any real employer."
+    ),
+}
+
+PRODUCTS = [
+    {"pn": "PX-400", "name": "Pulse oximeter simulator", "family": "Patient monitoring"},
+    {"pn": "DA-900", "name": "Defibrillator analyzer", "family": "Therapy test"},
+    {"pn": "IT-200", "name": "Infusion device analyzer", "family": "Infusion"},
+    {"pn": "NP-310", "name": "NIBP simulator", "family": "Patient monitoring"},
+    {"pn": "ECG-55", "name": "ECG simulator module", "family": "Patient monitoring"},
+]
+
+USERS = [
+    {"id": "u-viewer", "name": "Jordan Lee", "role": "viewer", "title": "Production lead (read-only)"},
+    {"id": "u-qe", "name": "Riley Chen", "role": "quality_engineer", "title": "Quality Engineer"},
+    {"id": "u-qam", "name": "Morgan Hale", "role": "qa_manager", "title": "QA Manager"},
+]
+
+SUPPLIERS = [
+    {
+        "id": "SUP-01",
+        "name": "Northline Plastics",
+        "scope": "Enclosure moldings, PX/NP housings",
+        "iso": "ISO 13485:2016",
+        "cert_expires": "2026-11-04",
+        "last_audit": "2026-03-18",
+        "on_time_pct": 91,
+        "ppm": 420,
+        "asl": "Approved",
+    },
+    {
+        "id": "SUP-02",
+        "name": "Cedar Ridge Electronics",
+        "scope": "PCBA, firmware-load boards",
+        "iso": "ISO 9001:2015",
+        "cert_expires": "2027-02-12",
+        "last_audit": "2026-01-09",
+        "on_time_pct": 97,
+        "ppm": 80,
+        "asl": "Approved",
+    },
+    {
+        "id": "SUP-03",
+        "name": "Prairie Cal Labs",
+        "scope": "ISO/IEC 17025 calibration (voltage, pressure)",
+        "iso": "ISO/IEC 17025:2017",
+        "cert_expires": "2026-09-30",
+        "last_audit": "2026-04-02",
+        "on_time_pct": 99,
+        "ppm": 0,
+        "asl": "Approved",
+    },
+    {
+        "id": "SUP-04",
+        "name": "Summit Label Co",
+        "scope": "UDI labels, IFU inserts",
+        "iso": "ISO 9001:2015",
+        "cert_expires": "2026-08-28",
+        "last_audit": "2025-11-14",
+        "on_time_pct": 88,
+        "ppm": 1100,
+        "asl": "Conditional",
+    },
+    {
+        "id": "SUP-05",
+        "name": "Ozark Metalworks",
+        "scope": "Chassis, heat sinks",
+        "iso": "ISO 9001:2015",
+        "cert_expires": "2027-06-01",
+        "last_audit": "2026-05-21",
+        "on_time_pct": 94,
+        "ppm": 210,
+        "asl": "Approved",
+    },
+    {
+        "id": "SUP-06",
+        "name": "Harbor Battery OEM",
+        "scope": "Pack assemblies for DA-900",
+        "iso": "ISO 13485:2016",
+        "cert_expires": "2026-10-15",
+        "last_audit": "2026-02-27",
+        "on_time_pct": 86,
+        "ppm": 640,
+        "asl": "Approved",
+    },
+    {
+        "id": "SUP-07",
+        "name": "Lumen Display Ltd",
+        "scope": "TFT panels",
+        "iso": "ISO 9001:2015",
+        "cert_expires": "2025-12-01",
+        "last_audit": "2025-08-19",
+        "on_time_pct": 79,
+        "ppm": 2100,
+        "asl": "Disqualified (pending SCAR close)",
+    },
+    {
+        "id": "SUP-08",
+        "name": "Midwest Fastener",
+        "scope": "Hardware kits",
+        "iso": "ISO 9001:2015",
+        "cert_expires": "2027-01-20",
+        "last_audit": "2026-06-11",
+        "on_time_pct": 98,
+        "ppm": 40,
+        "asl": "Approved",
+    },
+]
+
+
+def nc(**kwargs):
+    defaults = {
+        "status": "open",
+        "severity": "minor",
+        "source": "incoming inspection",
+        "containment": "",
+        "disposition": "use-as-is pending",
+        "capa_id": None,
+        "scar_id": None,
+        "complaint_id": None,
+        "qty": 1,
+        "lot": "",
+    }
+    defaults.update(kwargs)
+    return defaults
+
+
+NCS = [
+    nc(id="NC-2026-014", date="2026-08-08", pn="PX-400", lot="PX-2619", qty=12,
+       supplier_id="SUP-01", severity="major",
+       title="Housing warp — latch will not seat",
+       description="Incoming lot PX-2619: 12 of 200 enclosures fail latch gap spec 0.5 mm max (measured 0.9–1.4 mm).",
+       containment="Lot held in MRB cage. No units packed.",
+       disposition="return to supplier", status="open", scar_id="SCAR-2026-04"),
+    nc(id="NC-2026-013", date="2026-08-05", pn="DA-900", lot="DA-2588", qty=3,
+       supplier_id="SUP-06", severity="major",
+       title="Battery pack undervoltage at incoming",
+       description="Three packs below 10.8 V rest voltage. Spec 11.1–12.6 V.",
+       containment="Packs quarantined. Production kit DA-2588 blocked.",
+       disposition="rework / replace", status="investigation", capa_id="CAPA-2026-09", scar_id="SCAR-2026-05"),
+    nc(id="NC-2026-012", date="2026-08-01", pn="IT-200", lot="IT-2570", qty=1,
+       supplier_id="SUP-02", severity="critical",
+       title="Wrong firmware rev on PCBA",
+       description="Board labeled FW 3.4.1; checksum matches 3.2.0. Infusion rate table would be stale.",
+       containment="All IT-200 WIP stopped. 41 boards screened; 1 additional hit.",
+       disposition="reflash + 100% verify", status="open", capa_id="CAPA-2026-08"),
+    nc(id="NC-2026-011", date="2026-07-28", pn="NP-310", lot="NP-2561", qty=8,
+       supplier_id="SUP-04", severity="minor",
+       title="UDI barcode unreadable (grade F)",
+       description="Verifier grade F on 8 labels. Human-readable still correct.",
+       containment="Labels scrapped. Reprint from new roll.",
+       disposition="scrap", status="closed", capa_id="CAPA-2026-07", scar_id="SCAR-2026-03"),
+    nc(id="NC-2026-010", date="2026-07-22", pn="ECG-55", lot="ECG-2554", qty=2,
+       supplier_id="SUP-02", severity="minor",
+       title="Silk-screen offset on front panel",
+       description="Lead labels shifted 1.2 mm. No electrical impact.",
+       containment="Use-as-is after QA review.",
+       disposition="use-as-is", status="closed"),
+    nc(id="NC-2026-009", date="2026-07-15", pn="PX-400", lot="PX-2540", qty=1,
+       supplier_id=None, severity="major", source="in-process",
+       title="Failed SpO2 accuracy check at 70%",
+       description="Unit SN HX-44119 read 64% vs 70% optical phantom. Repeat fail.",
+       containment="Unit tagged. Neighboring serials 44110–44130 retested — pass.",
+       disposition="repair / recertify", status="closed", capa_id="CAPA-2026-06",
+       complaint_id="CMP-2026-018"),
+    nc(id="NC-2026-008", date="2026-07-09", pn="DA-900", lot="DA-2522", qty=4,
+       supplier_id="SUP-05", severity="minor",
+       title="Heat-sink fin burrs",
+       description="Operator cuts from sharp fins. 4 of 40 chassis.",
+       containment="Deburr remaining lot. Add glove note to WI-DA-12.",
+       disposition="rework", status="closed"),
+    nc(id="NC-2026-007", date="2026-06-30", pn="IT-200", lot="IT-2501", qty=6,
+       supplier_id="SUP-07", severity="major",
+       title="TFT flicker at 5 °C soak",
+       description="Environmental chamber: 6 displays flicker below 8 °C.",
+       containment="Stop use of Lumen lot LM-441. Switch to safety stock.",
+       disposition="return to supplier", status="closed", capa_id="CAPA-2026-05", scar_id="SCAR-2026-02"),
+    nc(id="NC-2026-006", date="2026-06-18", pn="NP-310", lot="NP-2488", qty=1,
+       supplier_id="SUP-03", severity="minor", source="calibration",
+       title="Pressure standard overdue on bench 3",
+       description="Fluke pressure module due 2026-06-15; used 2026-06-17 for NP-310 final.",
+       containment="Affected NP-310 SN HX-39002 held. Standard sent to Prairie Cal.",
+       disposition="retest after cal", status="closed", capa_id="CAPA-2026-04"),
+    nc(id="NC-2026-005", date="2026-06-04", pn="PX-400", lot="PX-2470", qty=20,
+       supplier_id="SUP-01", severity="minor",
+       title="Color mismatch — charcoal vs spec graphite",
+       description="Cosmetic only. Marketing accepted with concession.",
+       containment="None — appearance concession C-441.",
+       disposition="use-as-is", status="closed"),
+    nc(id="NC-2026-004", date="2026-05-21", pn="DA-900", lot="DA-2444", qty=2,
+       supplier_id="SUP-06", severity="major",
+       title="Connector keying reversed on pack harness",
+       description="Would force reverse polarity if mated. Caught at ICT.",
+       containment="All DA-900 packs from Harbor lot HB-19 screened.",
+       disposition="rework", status="closed", capa_id="CAPA-2026-03", scar_id="SCAR-2026-01"),
+    nc(id="NC-2026-003", date="2026-05-08", pn="ECG-55", lot="ECG-2420", qty=1,
+       supplier_id=None, severity="minor", source="final inspection",
+       title="Missing IFU language page (FR)",
+       description="French IFU page omitted in kit. English complete.",
+       containment="Kits reworked. Pack SOP updated.",
+       disposition="rework", status="closed"),
+    nc(id="NC-2026-002", date="2026-04-16", pn="IT-200", lot="IT-2399", qty=3,
+       supplier_id="SUP-02", severity="minor",
+       title="Conformal coat voids near J3",
+       description="IPC-A-610: acceptable after engineering review.",
+       containment="Documented on MRB-2026-22.",
+       disposition="use-as-is", status="closed"),
+    nc(id="NC-2026-001", date="2026-04-02", pn="PX-400", lot="PX-2380", qty=1,
+       supplier_id=None, severity="critical", source="customer complaint",
+       title="Unit powered on with cracked display (field)",
+       description="Hospital biomed reported crack after drop. No injury. Serial HX-40012.",
+       containment="RMA opened. Trend check: isolated drop, not lot issue.",
+       disposition="replace", status="closed", complaint_id="CMP-2026-011"),
+    nc(id="NC-2026-015", date="2026-08-11", pn="NP-310", lot="NP-2624", qty=5,
+       supplier_id="SUP-04", severity="major",
+       title="IFU revision mismatch vs DMR",
+       description="Packed IFU rev D; DMR requires rev E (alarm wording).",
+       containment="Finished goods hold FG-NP-88 (42 units). Recall assessment: not distributed.",
+       disposition="repack", status="open", capa_id="CAPA-2026-10"),
+    nc(id="NC-2026-016", date="2026-08-10", pn="DA-900", lot="DA-2620", qty=1,
+       supplier_id=None, severity="minor", source="audit finding",
+       title="Internal audit: incomplete DHR sign-off",
+       description="IA-2026-14: one DHR missing test tech second signature.",
+       containment="Retrain. Record completed same day.",
+       disposition="correct record", status="open"),
+]
+
+CAPAS = [
+    {
+        "id": "CAPA-2026-10", "opened": "2026-08-11", "due": "2026-09-22", "status": "open",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": ["NC-2026-015"],
+        "problem": "Wrong IFU revision packed on NP-310 — DMR not enforced at pack.",
+        "d2_team": "QE, Document Control, Pack lead",
+        "d3_containment": "Hold FG-NP-88. Quarantine IFU rev D stock.",
+        "d4_root_cause": "Pack WIP used printed stock without scanning DMR rev. No poka-yoke on IFU P/N.",
+        "d5_action": "Barcode IFU rev at pack; eDMR gate; scrap rev D.",
+        "d6_implement": "In progress — barcode scanner due 2026-08-20.",
+        "d7_prevent": "Document control kanban: only current rev in pack cell.",
+        "d8_congratulate": "",
+        "effectiveness_due": "2026-11-11", "effectiveness": "pending",
+        "supplier_id": "SUP-04",
+    },
+    {
+        "id": "CAPA-2026-09", "opened": "2026-08-05", "due": "2026-08-19", "status": "overdue",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": ["NC-2026-013"],
+        "problem": "Harbor Battery packs below rest-voltage spec at incoming.",
+        "d2_team": "QE, Incoming, Purchasing",
+        "d3_containment": "Quarantine HB lots 22–24. Stop kitting DA-900.",
+        "d4_root_cause": "Supplier changed cell vendor without notice. Incoming sampling was attributes-only, not voltage.",
+        "d5_action": "Add 100% rest-voltage at incoming for 3 lots; SCAR to Harbor; ASL watch.",
+        "d6_implement": "SCAR issued. Incoming WI not yet revised (overdue).",
+        "d7_prevent": "Purchasing change-notice clause in quality agreement.",
+        "d8_congratulate": "",
+        "effectiveness_due": "2026-11-05", "effectiveness": "pending",
+        "supplier_id": "SUP-06",
+    },
+    {
+        "id": "CAPA-2026-08", "opened": "2026-08-01", "due": "2026-09-12", "status": "open",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": ["NC-2026-012"],
+        "problem": "IT-200 PCBA shipped with stale firmware 3.2.0 labeled as 3.4.1.",
+        "d2_team": "QE, Test Eng, Cedar Ridge SQE",
+        "d3_containment": "WIP stop. Screen all 3.4.1 labeled boards.",
+        "d4_root_cause": "Supplier programmer recipe not locked; operator selected old file. Helix incoming did not verify checksum.",
+        "d5_action": "Checksum gate in ICT; supplier recipe lock; golden-image control.",
+        "d6_implement": "ICT checksum live 2026-08-07. Supplier lock pending.",
+        "d7_prevent": "Certificate of conformance must include SHA-256 of image.",
+        "d8_congratulate": "",
+        "effectiveness_due": "2026-11-01", "effectiveness": "pending",
+        "supplier_id": "SUP-02",
+    },
+    {
+        "id": "CAPA-2026-07", "opened": "2026-07-28", "due": "2026-08-25", "status": "open",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": ["NC-2026-011"],
+        "problem": "UDI labels grade F — verifier failures at incoming.",
+        "d2_team": "QE, Summit Label, Pack",
+        "d3_containment": "Scrap roll. Reprint.",
+        "d4_root_cause": "Ribbon lot with low darkness; Summit skipped verifier on that shift.",
+        "d5_action": "SCAR-2026-03; require grade C or better CoC photos.",
+        "d6_implement": "New roll passing. SCAR response late.",
+        "d7_prevent": "Incoming verifier sampling n=32 per roll.",
+        "d8_congratulate": "",
+        "effectiveness_due": "2026-10-28", "effectiveness": "pending",
+        "supplier_id": "SUP-04",
+    },
+    {
+        "id": "CAPA-2026-06", "opened": "2026-07-15", "due": "2026-08-26", "status": "implementation",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": ["NC-2026-009"],
+        "problem": "PX-400 failed 70% SpO2 accuracy — isolated unit, field-adjacent process.",
+        "d2_team": "QE, Test, Service",
+        "d3_containment": "Retest serial band. RMA path confirmed.",
+        "d4_root_cause": "Optical phantom LED aging; cal interval 12 mo too long for bench 2.",
+        "d5_action": "Phantom cal every 6 mo; add daily 70% check standard.",
+        "d6_implement": "Daily check live. Cal interval SOP in document control.",
+        "d7_prevent": "Include phantom in Prairie Cal scope.",
+        "d8_congratulate": "",
+        "effectiveness_due": "2026-10-15", "effectiveness": "pending",
+        "supplier_id": "SUP-03",
+    },
+    {
+        "id": "CAPA-2026-05", "opened": "2026-06-30", "due": "2026-08-01", "status": "effectiveness",
+        "owner": "Morgan Hale", "type": "corrective", "nc_ids": ["NC-2026-007"],
+        "problem": "Lumen TFT flicker at cold soak — multiple IT-200.",
+        "d2_team": "QE, Purchasing, Test",
+        "d3_containment": "Disqualify Lumen lot. Dual-source displays.",
+        "d4_root_cause": "Driver IC lot with weak low-temp spec. Supplier did not flow down.",
+        "d5_action": "ASL disqualify pending close; new display vendor first article.",
+        "d6_implement": "New vendor FAIR complete 2026-07-22.",
+        "d7_prevent": "Add 5 °C soak to incoming for displays.",
+        "d8_congratulate": "Test tech caught at chamber, not field.",
+        "effectiveness_due": "2026-09-30", "effectiveness": "on track — 0 repeats",
+        "supplier_id": "SUP-07",
+    },
+    {
+        "id": "CAPA-2026-04", "opened": "2026-06-18", "due": "2026-07-16", "status": "closed",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": ["NC-2026-006"],
+        "problem": "Overdue pressure standard used on NP-310 final test.",
+        "d2_team": "QE, Metrology, Prairie Cal",
+        "d3_containment": "Hold SN HX-39002. Recall cal of standard.",
+        "d4_root_cause": "Cal due calendar not in MES. Sticky note system failed during PTO.",
+        "d5_action": "MES due-date lockout on bench 3. Backup board in test cell.",
+        "d6_implement": "Lockout live 2026-07-02. Unit retested — pass.",
+        "d7_prevent": "Weekly metrology dashboard (this desk).",
+        "d8_congratulate": "Closed on time after lockout.",
+        "effectiveness_due": "2026-09-18", "effectiveness": "pass — 0 overdue standards in July",
+        "supplier_id": "SUP-03",
+        "closed": "2026-07-14",
+    },
+    {
+        "id": "CAPA-2026-03", "opened": "2026-05-21", "due": "2026-07-02", "status": "closed",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": ["NC-2026-004"],
+        "problem": "Reversed keying on DA-900 battery harness.",
+        "d2_team": "QE, Harbor, Design",
+        "d3_containment": "Screen Harbor lot HB-19.",
+        "d4_root_cause": "Connector P/N dual-sourced; one vendor mirrored housing. Drawing lacked polarity callout.",
+        "d5_action": "Drawing rev C polarity; unique P/N; ICT polarity test.",
+        "d6_implement": "ICT added 2026-06-04. Drawing released.",
+        "d7_prevent": "First-article includes polarity photo.",
+        "d8_congratulate": "Caught at ICT — no field units.",
+        "effectiveness_due": "2026-08-21", "effectiveness": "pass — 0 repeats",
+        "supplier_id": "SUP-06",
+        "closed": "2026-06-28",
+    },
+    {
+        "id": "CAPA-2026-02", "opened": "2026-03-12", "due": "2026-05-01", "status": "closed",
+        "owner": "Morgan Hale", "type": "preventive", "nc_ids": [],
+        "problem": "Near-miss: document control lag on WI updates after audit 2026-02.",
+        "d2_team": "QA Manager, Doc Control",
+        "d3_containment": "n/a — preventive",
+        "d4_root_cause": "Email-based WI rollout; no read-and-sign.",
+        "d5_action": "Read-and-sign in QMS; overdue training report weekly.",
+        "d6_implement": "Live 2026-04-10.",
+        "d7_prevent": "Training KPI on management review.",
+        "d8_congratulate": "Internal audit 2026-07 found 0 overdue WIs.",
+        "effectiveness_due": "2026-07-12", "effectiveness": "pass",
+        "supplier_id": None,
+        "closed": "2026-04-22",
+    },
+    {
+        "id": "CAPA-2026-01", "opened": "2026-02-04", "due": "2026-03-18", "status": "closed",
+        "owner": "Riley Chen", "type": "corrective", "nc_ids": [],
+        "problem": "Incoming skipped for a rush PX-400 resin lot (audit observation).",
+        "d2_team": "QE, Purchasing, Incoming",
+        "d3_containment": "Retro-inspect remaining resin.",
+        "d4_root_cause": "Rush PO flag bypassed incoming hold in ERP.",
+        "d5_action": "Remove bypass; QA Manager override only.",
+        "d6_implement": "ERP change 2026-02-20.",
+        "d7_prevent": "Weekly bypass report (must be zero).",
+        "d8_congratulate": "",
+        "effectiveness_due": "2026-05-04", "effectiveness": "pass — 0 bypasses",
+        "supplier_id": "SUP-01",
+        "closed": "2026-03-11",
+    },
+]
+
+SCARS = [
+    {
+        "id": "SCAR-2026-05", "date": "2026-08-06", "supplier_id": "SUP-06",
+        "nc_id": "NC-2026-013", "capa_id": "CAPA-2026-09",
+        "status": "open", "due": "2026-08-20",
+        "issue": "Battery packs below rest voltage; cell vendor change not notified.",
+        "response": "Awaiting 8D from Harbor.",
+        "days_open": 6,
+    },
+    {
+        "id": "SCAR-2026-04", "date": "2026-08-08", "supplier_id": "SUP-01",
+        "nc_id": "NC-2026-014", "capa_id": None,
+        "status": "open", "due": "2026-08-22",
+        "issue": "Housing warp / latch gap out of spec lot PX-2619.",
+        "response": "Northline acknowledged; tool maintenance scheduled.",
+        "days_open": 4,
+    },
+    {
+        "id": "SCAR-2026-03", "date": "2026-07-29", "supplier_id": "SUP-04",
+        "nc_id": "NC-2026-011", "capa_id": "CAPA-2026-07",
+        "status": "late", "due": "2026-08-12",
+        "issue": "UDI verifier grade F; no in-process verifier that shift.",
+        "response": "Partial — ribbon lot identified; 8D incomplete (no systemic action).",
+        "days_open": 14,
+    },
+    {
+        "id": "SCAR-2026-02", "date": "2026-07-01", "supplier_id": "SUP-07",
+        "nc_id": "NC-2026-007", "capa_id": "CAPA-2026-05",
+        "status": "closed", "due": "2026-07-22",
+        "issue": "TFT flicker at 5 °C.",
+        "response": "Lumen accepted; offered replacement IC. Helix moved ASL to disqualified.",
+        "days_open": 18,
+        "closed": "2026-07-19",
+    },
+    {
+        "id": "SCAR-2026-01", "date": "2026-05-22", "supplier_id": "SUP-06",
+        "nc_id": "NC-2026-004", "capa_id": "CAPA-2026-03",
+        "status": "closed", "due": "2026-06-12",
+        "issue": "Reversed harness keying.",
+        "response": "Harbor 8D accepted. Unique P/N cut in.",
+        "days_open": 12,
+        "closed": "2026-06-03",
+    },
+    {
+        "id": "SCAR-2026-06", "date": "2026-08-11", "supplier_id": "SUP-04",
+        "nc_id": "NC-2026-015", "capa_id": "CAPA-2026-10",
+        "status": "open", "due": "2026-08-25",
+        "issue": "IFU rev D shipped to Helix after rev E release.",
+        "response": "Not yet received.",
+        "days_open": 1,
+    },
+]
+
+COMPLAINTS = [
+    {
+        "id": "CMP-2026-018", "date": "2026-07-14", "pn": "PX-400", "sn": "HX-44119",
+        "customer": "Midwest Regional Biomed (DEMO)",
+        "summary": "SpO2 reading low vs patient monitor during in-service check.",
+        "severity": "major", "status": "linked",
+        "nc_id": "NC-2026-009", "capa_id": "CAPA-2026-06",
+        "mdv": "Not reportable — test equipment, no patient injury. Logged for trend.",
+        "closed": None,
+    },
+    {
+        "id": "CMP-2026-017", "date": "2026-07-02", "pn": "IT-200", "sn": "HX-38801",
+        "customer": "Lakeside Hospital Clinical Eng (DEMO)",
+        "summary": "Display flicker in cold storage room (~8 °C).",
+        "severity": "major", "status": "closed",
+        "nc_id": "NC-2026-007", "capa_id": "CAPA-2026-05",
+        "mdv": "Not reportable. Unit replaced under warranty.",
+        "closed": "2026-07-20",
+    },
+    {
+        "id": "CMP-2026-016", "date": "2026-06-20", "pn": "DA-900", "sn": "HX-36044",
+        "customer": "County EMS training (DEMO)",
+        "summary": "Unit would not power after overnight charge.",
+        "severity": "minor", "status": "closed",
+        "nc_id": None, "capa_id": None,
+        "mdv": "User left unit on the charger with a failed wall wart (third party). NFF after new PSU.",
+        "closed": "2026-06-27",
+    },
+    {
+        "id": "CMP-2026-015", "date": "2026-06-08", "pn": "NP-310", "sn": "HX-39002",
+        "customer": "Helix internal (final test hold)",
+        "summary": "Internal — not a customer complaint; logged for completeness with NC-2026-006.",
+        "severity": "minor", "status": "closed",
+        "nc_id": "NC-2026-006", "capa_id": "CAPA-2026-04",
+        "mdv": "n/a internal",
+        "closed": "2026-07-14",
+    },
+    {
+        "id": "CMP-2026-014", "date": "2026-05-19", "pn": "PX-400", "sn": "HX-41002",
+        "customer": "Summit Clinic (DEMO)",
+        "summary": "Cosmetic scratch on housing at incoming to clinic.",
+        "severity": "minor", "status": "closed",
+        "nc_id": None, "capa_id": None,
+        "mdv": "Not reportable. Replacement housing shipped.",
+        "closed": "2026-05-22",
+    },
+    {
+        "id": "CMP-2026-013", "date": "2026-05-02", "pn": "ECG-55", "sn": "HX-35018",
+        "customer": "University sim lab (DEMO)",
+        "summary": "Lead map confusing for students.",
+        "severity": "minor", "status": "closed",
+        "nc_id": "NC-2026-010", "capa_id": None,
+        "mdv": "Feedback — IFU diagram updated (rev E). Not a malfunction.",
+        "closed": "2026-05-28",
+    },
+    {
+        "id": "CMP-2026-012", "date": "2026-04-21", "pn": "IT-200", "sn": "HX-37110",
+        "customer": "West End Biomed (DEMO)",
+        "summary": "Requested extra language IFU (already in DMR).",
+        "severity": "minor", "status": "closed",
+        "nc_id": None, "capa_id": None,
+        "mdv": "n/a — documentation request.",
+        "closed": "2026-04-22",
+    },
+    {
+        "id": "CMP-2026-011", "date": "2026-04-01", "pn": "PX-400", "sn": "HX-40012",
+        "customer": "River City Hospital (DEMO)",
+        "summary": "Cracked display after unit dropped from cart.",
+        "severity": "major", "status": "closed",
+        "nc_id": "NC-2026-001", "capa_id": None,
+        "mdv": "Not reportable — misuse/drop. Replaced. Trend: isolated.",
+        "closed": "2026-04-18",
+    },
+    {
+        "id": "CMP-2026-019", "date": "2026-08-09", "pn": "DA-900", "sn": "HX-36201",
+        "customer": "Prairie Fire EMS (DEMO)",
+        "summary": "Intermittent power during scenario training.",
+        "severity": "major", "status": "open",
+        "nc_id": "NC-2026-013", "capa_id": "CAPA-2026-09",
+        "mdv": "Under investigation — possible pack undervoltage family. No patient device.",
+        "closed": None,
+    },
+    {
+        "id": "CMP-2026-020", "date": "2026-08-11", "pn": "NP-310", "sn": "HX-39140",
+        "customer": "Not distributed — finished goods hold",
+        "summary": "Internal catch: IFU rev. Not a field complaint.",
+        "severity": "major", "status": "linked",
+        "nc_id": "NC-2026-015", "capa_id": "CAPA-2026-10",
+        "mdv": "n/a — not in field.",
+        "closed": None,
+    },
+]
+
+REQUIREMENTS = [
+    {"id": "R-01", "text": "Every NC, CAPA, SCAR, and complaint has a unique immutable ID.", "risk": "High — mixed records / audit trail break"},
+    {"id": "R-02", "text": "NC cannot be saved without title, product, and description.", "risk": "High — incomplete quality records"},
+    {"id": "R-03", "text": "Only QA Manager may close a CAPA.", "risk": "High — premature close / ineffective CAPA"},
+    {"id": "R-04", "text": "Quality Engineer may create NC, CAPA, SCAR, and complaints.", "risk": "Medium — access control"},
+    {"id": "R-05", "text": "Viewer role is read-only (no create/close).", "risk": "High — unauthorized changes"},
+    {"id": "R-06", "text": "Audit trail appends user, action, timestamp; entries cannot be deleted in the UI.", "risk": "High — 21 CFR 11-style integrity (demo)"},
+    {"id": "R-07", "text": "Dashboard KPIs compute from live records (open NC, overdue CAPA, expiring certs).", "risk": "Medium — management review wrong"},
+    {"id": "R-08", "text": "Supplier scorecard reflects open SCARs, PPM, on-time %, cert status.", "risk": "Medium — ASL decisions"},
+    {"id": "R-09", "text": "Management review export includes record IDs present on screen.", "risk": "Medium — evidence pack"},
+    {"id": "R-10", "text": "Demo banner states data are synthetic.", "risk": "High — someone treating this as real QMS"},
+]
+
+
+def supplier_score(s, scars):
+    open_scars = [x for x in scars if x["supplier_id"] == s["id"] and x["status"] in ("open", "late")]
+    expired = s["cert_expires"] < TODAY
+    expiring = s["cert_expires"] <= "2026-11-10"
+    score = 100
+    score -= 12 * len(open_scars)
+    score -= min(25, s["ppm"] / 80)
+    score -= max(0, (95 - s["on_time_pct"]) * 0.8)
+    if expired:
+        score -= 35
+    elif expiring:
+        score -= 8
+    if s["asl"].startswith("Disqualified"):
+        score = min(score, 25)
+    if s["asl"].startswith("Conditional"):
+        score = min(score, 70)
+    return round(max(0, min(100, score)), 1)
+
+
+def main():
+    for s in SUPPLIERS:
+        s["score"] = supplier_score(s, SCARS)
+
+    seed = {
+        "meta": {
+            "app": "Helix QMS Desk",
+            "version": APP_VERSION,
+            "generated": TODAY,
+            "company": COMPANY,
+            "today": TODAY,
+        },
+        "users": USERS,
+        "products": PRODUCTS,
+        "suppliers": SUPPLIERS,
+        "ncs": NCS,
+        "capas": CAPAS,
+        "scars": SCARS,
+        "complaints": COMPLAINTS,
+        "requirements": REQUIREMENTS,
+        "audit": [
+            {"ts": "2026-08-12T08:00:00Z", "user": "system", "action": "seed_load", "detail": "DEMO dataset v1.0.0"},
+        ],
+    }
+    raw = json.dumps(seed, sort_keys=True, separators=(",", ":")).encode()
+    seed["meta"]["checksum"] = hashlib.sha256(raw).hexdigest()[:16]
+
+    root = Path(__file__).resolve().parents[1]
+    (root / "data" / "seed.json").write_text(json.dumps(seed, indent=2) + "\n")
+    js = "/* generated — do not edit by hand */\nwindow.HELIX_SEED = " + json.dumps(seed) + ";\n"
+    (root / "js" / "seed.js").write_text(js)
+    print("wrote seed", seed["meta"]["checksum"], "ncs", len(NCS), "capas", len(CAPAS))
+
+
+if __name__ == "__main__":
+    main()
