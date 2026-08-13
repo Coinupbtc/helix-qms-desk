@@ -34,7 +34,7 @@
     return s ? s.name : "—";
   }
 
-  function overview() {
+  function plantBoard() {
     const k = g.HelixKpi.kpis();
     const d = g.HelixStore.state.data;
     const overdue = d.capas.filter((c) => c.status !== "closed" && c.due < d.meta.today);
@@ -46,7 +46,8 @@
       <section class="hero">
         <p class="kicker">What needs a decision this week</p>
         <h1>Open quality work at Helix <span class="demo">DEMO</span></h1>
-        <p class="lede">Synthetic biomedical test-equipment plant. Use this board the way a plant manager would: overdue CAPAs first, then weak suppliers, then new NCs.</p>
+        <p class="lede">Charts and aging. Week-one story is on Overview.</p>
+        <p><button type="button" class="link" data-view-jump="overview">Back to Monday war-room</button></p>
       </section>
       <div class="kpi-grid">
         <article class="kpi ${k.overdueCapa ? "alert" : ""}"><div class="n">${k.overdueCapa}</div><div class="l">Overdue CAPAs</div><p>Due date passed, still open.</p></article>
@@ -198,6 +199,10 @@
   }
 
   function detailCapa(id) {
+    if (g.HelixWar) {
+      if (id === "CAPA-2026-11") g.HelixWar.mark("capa11");
+      if (id === "CAPA-2026-09") g.HelixWar.mark("harbor");
+    }
     const c = g.HelixStore.state.data.capas.find((x) => x.id === id);
     if (!c) return "<p>Not found.</p>";
     const steps = [
@@ -276,14 +281,12 @@
     const r = g.HelixStore.state.valReport;
     const reqs = g.HelixStore.state.data.requirements;
     let body = `<section class="hero"><h1>Computer system validation</h1>
-      <p class="lede">IQ / OQ / PQ run against this desk, then the plant dataset is restored. Sign the report after a pass. This is demonstration e-sign, not 21 CFR 11 certified.</p>
-      <button class="btn primary" data-action="run-val">Run IQ / OQ / PQ</button>
+      <p class="lede">Two protocols, same rule: presence is not integrity. Desk first, then Helix Assist. Demonstration e-sign, not 21 CFR 11 certified.</p>
+      <button class="btn primary" data-action="run-val">Run desk IQ / OQ / PQ</button>
+      <button class="btn primary" data-action="run-serve">Run serving protocol</button>
       <button class="btn" data-action="reset">Reset demo data</button>
-    </section>
-    <section class="card"><h2>User requirements</h2>
-      <div class="tablewrap"><table><thead><tr><th>ID</th><th>Requirement</th><th>Risk if wrong</th></tr></thead><tbody>
-      ${reqs.map((x) => `<tr><td>${esc(x.id)}</td><td>${esc(x.text)}</td><td>${esc(x.risk)}</td></tr>`).join("")}
-      </tbody></table></div></section>`;
+    </section>`;
+    if (g.HelixServe) body += g.HelixServe.viewExtras();
     if (r) {
       const block = (name, tests) => `
         <h3>${name} — ${tests.filter((t) => t.pass).length}/${tests.length} pass</h3>
@@ -311,6 +314,10 @@
         <button class="btn" data-action="dl-val" type="button">Download report JSON</button>
       </section>`;
     }
+    body += `<section class="card"><h2>User requirements</h2>
+      <div class="tablewrap"><table><thead><tr><th>ID</th><th>Requirement</th><th>Risk if wrong</th></tr></thead><tbody>
+      ${reqs.map((x) => `<tr><td>${esc(x.id)}</td><td>${esc(x.text)}</td><td>${esc(x.risk)}</td></tr>`).join("")}
+      </tbody></table></div></section>`;
     return body;
   }
 
@@ -329,6 +336,7 @@
           <li><strong>${k.openNc}</strong> open NCs · <strong>${k.criticalOpen}</strong> critical still open</li>
           <li><strong>${k.openScar}</strong> open/late SCARs (${k.lateScar} late) · <strong>${k.expiringCerts}</strong> certs inside 90 days (${k.expiredCerts} expired)</li>
           <li>YTD: ${k.complaintsYtd} complaints, ${k.closedCapaYtd} CAPAs closed</li>
+          <li><strong>${k.stickerMismatch}</strong> standards with sticker ≠ cert · <strong>${k.trainingGaps}</strong> training gaps</li>
         </ul>
         <h3>NCs by month</h3>
         ${g.HelixKpi.svgBars(g.HelixKpi.byMonth(d.ncs, "date"))}
@@ -363,7 +371,9 @@
   }
 
   g.HelixRender = {
-    overview, ncs, capas, complaints, suppliers, scars, valView, reports, formNc,
+    overview: function () { return g.HelixWar ? g.HelixWar.overview() : plantBoard(); },
+    plantBoard: plantBoard,
+    ncs, capas, complaints, suppliers, scars, valView, reports, formNc,
     detailNc, detailCapa, detailSup, detailCmp, detailScar, esc,
   };
 })(window);

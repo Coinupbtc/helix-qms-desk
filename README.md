@@ -1,18 +1,18 @@
 # Helix QMS Desk
 
-![Overview](docs/screenshots/overview.png)
+![Monday war-room](docs/screenshots/overview.png)
 
 ## At a glance
 
 | | |
 |---|---|
-| **What it is** | A working quality desk for a **fictional** biomedical test-equipment plant (NC, CAPA/8D, complaints, ASL/SCAR) plus a **live IQ/OQ/PQ runner** that tests that same desk. |
-| **What it’s for** | Show a hiring manager how you think about **post-market / manufacturing quality** and **computer system validation** — with numbers, aging, and pass/fail evidence, not empty templates. |
-| **How to use it** | `./setup.sh` then open the URL. Click Overview → a red CAPA → Validation → Run IQ/OQ/PQ. `./scripts/smoke.sh` proves the protocol. |
+| **What it is** | A working quality desk for a **fictional** biomedical test-equipment plant. Monday you walk in: a cal sticker disagrees with its certificate, a training record is missing, a CAPA is overdue — then you run **IQ/OQ/PQ on the desk and on a local assist model**. |
+| **What it’s for** | Show a hiring manager how you think about **post-market / manufacturing quality** and **computer system validation** — including the rule *presence is not integrity*. |
+| **How to use it** | `./setup.sh` then open the URL. Follow the five Monday steps. Or open the [GitHub Pages build](https://coinupbtc.github.io/helix-qms-desk/). |
 
-**GitHub description:** What: quality desk + CSV binder for a demo med-device plant. For: Sr QE / SQE / validation screens. How: `./setup.sh`.
+**GitHub description:** What: Monday war-room + CSV binder for a demo med-device plant (desk + assist). For: Sr QE / SQE / validation screens. How: `./setup.sh`.
 
-> All names, lots, complaints, and suppliers are **synthetic**. This is not BC Group (or any real) QMS data.
+> All names, lots, complaints, standards, and model logs are **synthetic**. This is not BC Group (or any real) QMS data.
 
 ## Try it
 
@@ -26,40 +26,50 @@ chmod +x setup.sh
 
 Or open **[the GitHub Pages build](https://coinupbtc.github.io/helix-qms-desk/)**.
 
+## Monday path (90 seconds)
+
+1. **STK-V-204** — sticker due 2026-09-01, certificate due 2026-07-31. Used Friday on a DA-900 final.
+2. **CAPA-2026-11** — 8D: MES lockout read the label, not the cert. Same class as closed CAPA-2026-04.
+3. **CAPA-2026-09** — overdue Harbor packs; incoming done with a lapsed WI-IN-04 record.
+4. **Validation → Run desk IQ/OQ/PQ** — unique IDs, access control, audit trail, intended-use chain.
+5. **Run serving protocol** — HTTP 200 with empty content is a **caught failure**, not a pass.
+
+`./scripts/smoke.sh` proves both protocols.
+
 ## What the data is (so it is not “fake empty”)
 
 Helix Biomedical Instruments is a made-up OEM (pulse-ox simulators, defib analyzers, infusion testers). The seed is internally consistent:
 
 | Family | Count | What you should notice |
 |---|---|---|
-| NCs | 16 | Warp, wrong firmware, IFU rev, overdue cal standard |
-| CAPAs | 10 | One **overdue** (battery packs); 8D filled in |
+| NCs | 17 | Warp, wrong firmware, IFU rev, **sticker ≠ cert** |
+| CAPAs | 11 | One **overdue** (battery packs); new Monday 8D |
+| Standards | 4 | One mismatch (STK-V-204) |
+| Training | 4 | One **gap** (incoming WI expired) |
 | SCARs | 6 | Late UDI-label SCAR; Harbor Battery open |
 | Complaints | 10 | Field + internal; MDR line is demo-only |
 | Suppliers | 8 | Certs expiring; one ASL **disqualified** (displays) |
 
-KPIs are **computed** (overdue = due date &lt; 2026-08-12 and not closed). Supplier score moves when you open a SCAR.
+KPIs are **computed**. Supplier score moves when you open a SCAR.
 
 ## What “validation” does
 
-| Stage | Question | Result you want |
+| Stage | Desk | Helix Assist |
 |---|---|---|
-| **IQ** | Right version, seed checksum, record families, SYNTHETIC banner | Install evidence |
-| **OQ** | Unique IDs; empty NC blocked; viewer cannot write or close CAPA; QA Manager can close; audit grows; overdue math matches | Permission + data integrity |
-| **PQ** | Complaint → NC → CAPA → SCAR; supplier score drops after SCAR | Intended use |
+| **IQ** | Version, seed checksum, families, SYNTHETIC banner, sticker/training detect | Intended use, approved model + checksum, SYNTHETIC fixture |
+| **OQ** | Permissions, empty NC blocked, audit, overdue math | HTTP 200 is presence; empty content is flagged; checksum matches ECO |
+| **PQ** | Complaint → NC → CAPA → SCAR; supplier score drops | CMP-2026-019 drafts as battery-pack / major; cannot close CAPA |
 
-Open **Validation → Run IQ / OQ / PQ**. The plant dataset is restored afterward. Sign the report (typed name, demo). Screenshot + JSON for a resume packet.
-
-v1.1 adds: live Pareto/aging charts, list filters, collision-safe IDs, CAPA close gates (D4/D5/effectiveness), ECO list, protocol sandbox, RTM, demo e-sign, `scripts/smoke.sh`.
+Canned serving evidence runs on GitHub Pages (no GPU). Optional live probe of `127.0.0.1:8888` only works from a local `./setup.sh` server. The bakeoff tok/s figure in the fixture is **labeled demo**.
 
 ## Photos of results
 
 | Screen | File |
 |---|---|
-| Week-one decisions | `docs/screenshots/overview.png` |
+| Monday war-room | `docs/screenshots/overview.png` |
+| Sticker vs certificate | `docs/screenshots/sticker-vs-cert.png` |
 | CAPA 8D | `docs/screenshots/capa-8d.png` |
-| Supplier scorecard | `docs/screenshots/supplier.png` |
-| IQ/OQ/PQ report | `docs/screenshots/validation.png` |
+| IQ/OQ/PQ + Assist | `docs/screenshots/validation.png` |
 | Management review | `docs/screenshots/review-pack.png` |
 | Phone (390×844) | `docs/screenshots/phone-overview.png` |
 
@@ -73,7 +83,7 @@ v1.1 adds: live Pareto/aging charts, list filters, collision-safe IDs, CAPA clos
 
 ## Resume one-liner
 
-Built a demonstration eQMS desk with live CAPA aging and supplier scoring, and executed IQ/OQ/PQ against that system (unique IDs, access control, audit trail, intended-use chain). Dataset is synthetic.
+Built a demonstration eQMS war-room (CAPA aging, metrology sticker-vs-cert, training gaps) and executed IQ/OQ/PQ against that desk **and** a local assist model — treating HTTP 200 with empty content as a failed integrity check, not a pass. Dataset is synthetic.
 
 ## License
 

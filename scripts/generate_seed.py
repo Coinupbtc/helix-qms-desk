@@ -9,8 +9,18 @@ import hashlib
 import json
 from pathlib import Path
 
+from seed_extras import (  # noqa: E402 — same scripts/ dir
+    CAPAS_EXTRA,
+    ECOS_EXTRA,
+    NCS_EXTRA,
+    REQS_EXTRA,
+    SERVING,
+    STANDARDS,
+    TRAINING,
+)
+
 TODAY = "2026-08-12"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 # Fictional OEM — biomedical test equipment, not a real company.
 COMPANY = {
@@ -245,6 +255,7 @@ NCS = [
        containment="Retrain. Record completed same day.",
        disposition="correct record", status="open"),
 ]
+NCS.extend(NCS_EXTRA)
 
 CAPAS = [
     {
@@ -392,6 +403,7 @@ CAPAS = [
         "closed": "2026-03-11",
     },
 ]
+CAPAS.extend(CAPAS_EXTRA)
 
 SCARS = [
     {
@@ -555,6 +567,7 @@ REQUIREMENTS = [
     {"id": "R-13", "text": "OQ/PQ mutations restore the production dataset after the run (sandbox).", "risk": "Medium — demo destroyed by protocol"},
     {"id": "R-14", "text": "Foreign keys (NC↔CAPA↔SCAR↔complaint↔supplier) resolve or are null.", "risk": "High — broken traceability"},
 ]
+REQUIREMENTS.extend(REQS_EXTRA)
 
 CHANGE_CONTROLS = [
     {"id": "ECO-2026-014", "date": "2026-08-07", "title": "IFU NP-310 rev E alarm wording", "status": "released", "linked": "CAPA-2026-10"},
@@ -563,6 +576,7 @@ CHANGE_CONTROLS = [
     {"id": "ECO-2026-016", "date": "2026-08-07", "title": "ICT checksum gate IT-200 firmware", "status": "in verification", "linked": "CAPA-2026-08"},
     {"id": "ECO-2026-018", "date": "2026-08-11", "title": "Barcode IFU rev at pack cell", "status": "open", "linked": "CAPA-2026-10"},
 ]
+CHANGE_CONTROLS.extend(ECOS_EXTRA)
 
 
 def supplier_score(s, scars):
@@ -590,6 +604,7 @@ def main():
 
     ids = [n["id"] for n in NCS] + [c["id"] for c in CAPAS] + [s["id"] for s in SCARS]
     ids += [c["id"] for c in COMPLAINTS] + [s["id"] for s in SUPPLIERS]
+    ids += [s["id"] for s in STANDARDS] + [t["id"] for t in TRAINING] + [e["id"] for e in CHANGE_CONTROLS]
     if len(ids) != len(set(ids)):
         raise SystemExit("duplicate IDs in seed")
     nc_ids = {n["id"] for n in NCS}
@@ -621,9 +636,12 @@ def main():
         "scars": SCARS,
         "complaints": COMPLAINTS,
         "changes": CHANGE_CONTROLS,
+        "standards": STANDARDS,
+        "training": TRAINING,
+        "serving": SERVING,
         "requirements": REQUIREMENTS,
         "audit": [
-            {"ts": "2026-08-12T08:00:00Z", "user": "system", "action": "seed_load", "detail": "DEMO dataset v1.0.0"},
+            {"ts": "2026-08-12T07:40:00Z", "user": "system", "action": "seed_load", "detail": "DEMO dataset v1.2.0 week-one"},
         ],
     }
     raw = json.dumps(seed, sort_keys=True, separators=(",", ":")).encode()

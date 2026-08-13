@@ -36,12 +36,21 @@
         evidence: "checksum=" + d.meta.checksum,
       })),
       rec("IQ-03", "R-07", "Required record families loaded", () => {
-        const ok = d.ncs.length && d.capas.length && d.scars.length && d.suppliers.length && d.complaints.length;
+        const ok =
+          d.ncs.length &&
+          d.capas.length &&
+          d.scars.length &&
+          d.suppliers.length &&
+          d.complaints.length &&
+          (d.standards || []).length &&
+          (d.training || []).length &&
+          d.serving;
         return {
           pass: ok,
           evidence:
             "NC " + d.ncs.length + ", CAPA " + d.capas.length + ", SCAR " + d.scars.length +
-            ", SUP " + d.suppliers.length + ", CMP " + d.complaints.length,
+            ", SUP " + d.suppliers.length + ", CMP " + d.complaints.length +
+            ", STD " + (d.standards || []).length + ", TRN " + (d.training || []).length,
         };
       }),
       rec("IQ-04", "R-10", "Synthetic-data disclaimer present", () => ({
@@ -60,6 +69,21 @@
         pass: (d.changes || []).length >= 3,
         evidence: "ECO n=" + (d.changes || []).length,
       })),
+      rec("IQ-08", "R-18", "Sticker ≠ cert is detectable on a live standard", () => {
+        const bad = (d.standards || []).filter((s) => s.sticker_due !== s.cert_due);
+        return { pass: bad.length === 1 && bad[0].id === "STK-V-204", evidence: "mismatch n=" + bad.length };
+      }),
+      rec("IQ-09", "R-18", "Training gap is detectable", () => {
+        const gaps = (d.training || []).filter((t) => t.status === "gap");
+        return { pass: gaps.length === 1 && /Ortiz/.test(gaps[0].person), evidence: "gaps n=" + gaps.length };
+      }),
+      rec("IQ-10", "R-17", "Serving fixture matches approved ECO", () => {
+        const sv = d.serving || {};
+        return {
+          pass: sv.approved_model === "helix-assist-0.3" && sv.eco === "ECO-2026-020",
+          evidence: String(sv.approved_model || "") + " · " + String(sv.eco || ""),
+        };
+      }),
     ];
   }
 

@@ -1,6 +1,6 @@
 /* Live QMS state. Seed is synthetic; mutations stay in this session unless saved. */
 (function (g) {
-    const KEY = "helix-qms-desk-v2";
+    const KEY = "helix-qms-desk-v3";
 
   function clone(x) {
     return JSON.parse(JSON.stringify(x));
@@ -23,6 +23,8 @@
     selected: null,
     flash: null,
     valReport: null,
+    serveReport: null,
+    serveLive: null,
   };
 
   function persist() {
@@ -64,6 +66,8 @@
   function reset() {
     state.data = clone(g.HELIX_SEED);
     state.valReport = null;
+    state.serveReport = null;
+    state.serveLive = null;
     persist();
     audit("reset_demo", "restored synthetic seed");
   }

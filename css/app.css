@@ -116,8 +116,27 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 .kpi .n { font-variant-numeric: tabular-nums; font-family: ui-sans-serif, system-ui, sans-serif; }
 
+.walk { list-style: none; padding: 0; margin: 0 0 16px; }
+.walk-step { margin: 0 0 8px; }
+.walk-btn, .rowlink.static {
+  display: block; width: 100%; text-align: left;
+  min-height: 44px; padding: 12px 14px;
+  border: 1px solid var(--line); background: var(--card); border-radius: 10px;
+  font: inherit; cursor: pointer;
+}
+.walk-btn span, .walk-btn em, .rowlink.static span, .rowlink.static em {
+  display: block; color: var(--muted); font-size: 14px; font-style: normal;
+}
+.walk-step.done .walk-btn { border-color: var(--ok); background: var(--okbg); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.compare-col { padding: 8px; }
+.big-date { font-size: 1.8rem; font-weight: 700; margin: 4px 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+.alert-card { background: var(--badbg); border-color: #e8b4b8; }
+.rowlink.static { cursor: default; margin-bottom: 8px; }
+.board-link { margin-top: 16px; }
+
 @media (max-width: 480px) {
-  .split { grid-template-columns: 1fr; }
+  .split, .compare { grid-template-columns: 1fr; }
   .hero h1 { font-size: 1.35rem; }
   header.app { flex-direction: column; align-items: stretch; }
   header .meta { margin-left: 0; }

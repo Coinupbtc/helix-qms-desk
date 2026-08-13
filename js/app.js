@@ -6,7 +6,16 @@
     const st = g.HelixStore.state;
     document.getElementById("role").value = st.role;
     document.querySelectorAll("nav button[data-view]").forEach((b) => {
-      b.classList.toggle("on", b.getAttribute("data-view") === st.view && !st.selected);
+      const v = b.getAttribute("data-view");
+      const parent =
+        (st.view === "std" || st.view === "board") ? "overview" :
+        (st.view === "ncs") ? "ncs" :
+        (st.view === "capas") ? "capas" :
+        (st.view === "complaints") ? "complaints" :
+        (st.view === "suppliers") ? "suppliers" :
+        (st.view === "scars") ? "scars" :
+        st.view;
+      b.classList.toggle("on", v === parent);
     });
     document.getElementById("who").textContent = g.HelixStore.user().name + " · " + g.HelixStore.user().title;
     const foot = document.getElementById("foot");
@@ -16,6 +25,8 @@
     }
     let html = "";
     if (st.view === "overview") html = g.HelixRender.overview();
+    else if (st.view === "board") html = g.HelixRender.plantBoard();
+    else if (st.view === "std") html = g.HelixWar.detailStd(st.selected);
     else if (st.view === "ncs" && !st.selected) html = g.HelixRender.ncs();
     else if (st.view === "ncs" && st.selected === "new") html = g.HelixRender.formNc();
     else if (st.view === "ncs") html = g.HelixRender.detailNc(st.selected);
@@ -51,9 +62,19 @@
       go(nav.getAttribute("data-view"));
       return;
     }
+    const jump = e.target.closest("[data-view-jump]");
+    if (jump) {
+      go(jump.getAttribute("data-view-jump"));
+      const scrollId = jump.getAttribute("data-scroll");
+      if (scrollId) {
+        const el = document.getElementById(scrollId);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
     const link = e.target.closest("[data-go]");
     if (link) {
-      const map = { nc: "ncs", capa: "capas", cmp: "complaints", supplier: "suppliers", scar: "scars" };
+      const map = { nc: "ncs", capa: "capas", cmp: "complaints", supplier: "suppliers", scar: "scars", std: "std" };
       go(map[link.getAttribute("data-go")], link.getAttribute("data-id"));
       return;
     }
@@ -68,10 +89,37 @@
     }
     if (a === "run-val") {
       const r = g.HelixVal.runAll();
+      if (g.HelixWar) g.HelixWar.mark("desk");
       g.HelixStore.state.flash = r.pass
-        ? "Protocol PASS " + r.totals.pass + "/" + r.totals.n
-        : "Protocol FAIL: " + r.failed.join(", ");
+        ? "Desk protocol PASS " + r.totals.pass + "/" + r.totals.n
+        : "Desk protocol FAIL: " + r.failed.join(", ");
       go("validation");
+    }
+    if (a === "run-serve") {
+      const r = g.HelixServe.runAll();
+      g.HelixStore.state.flash = r.pass
+        ? "Assist protocol PASS " + r.totals.pass + "/" + r.totals.n
+        : "Assist protocol FAIL: " + r.failed.join(", ");
+      go("validation");
+      const lab = document.getElementById("serve-lab");
+      if (lab) lab.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (a === "probe-live") {
+      g.HelixServe.probeLive().then(() => {
+        g.HelixStore.state.flash = "Live probe finished (canned protocol is still the evidence pack).";
+        go("validation");
+        const lab = document.getElementById("serve-lab");
+        if (lab) lab.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    if (a === "dl-serve") {
+      const r = g.HelixStore.state.serveReport;
+      if (!r) return;
+      const blob = new Blob([JSON.stringify(r, null, 2)], { type: "application/json" });
+      const ael = document.createElement("a");
+      ael.href = URL.createObjectURL(blob);
+      ael.download = "helix-assist-iq-oq-pq-report.json";
+      ael.click();
     }
     if (a === "print") window.print();
     if (a === "dl-val") {
@@ -122,7 +170,19 @@
       e.preventDefault();
       try {
         g.HelixVal.sign(new FormData(e.target).get("name"));
-        g.HelixStore.state.flash = "Report signed (demo).";
+        g.HelixStore.state.flash = "Desk report signed (demo).";
+        paint();
+      } catch (ex) {
+        g.HelixStore.state.flash = ex.message;
+        paint();
+      }
+      return;
+    }
+    if (e.target.id === "sign-serve-form") {
+      e.preventDefault();
+      try {
+        g.HelixServe.sign(new FormData(e.target).get("name"));
+        g.HelixStore.state.flash = "Assist report signed (demo).";
         paint();
       } catch (ex) {
         g.HelixStore.state.flash = ex.message;
@@ -151,6 +211,17 @@
   if (q.get("view")) go(q.get("view"), q.get("id") || null);
   if (q.get("run") === "val") {
     g.HelixVal.runAll();
+    if (g.HelixWar) g.HelixWar.mark("desk");
+    go("validation");
+  }
+  if (q.get("run") === "serve") {
+    g.HelixServe.runAll();
+    go("validation");
+  }
+  if (q.get("run") === "all") {
+    g.HelixVal.runAll();
+    if (g.HelixWar) g.HelixWar.mark("desk");
+    g.HelixServe.runAll();
     go("validation");
   }
 })(window);

@@ -34,6 +34,8 @@
       complaintsYtd: d.complaints.length,
       medianCycleDays: medianCycle,
       lateScar: d.scars.filter((s) => s.status === "late").length,
+      stickerMismatch: (d.standards || []).filter((s) => s.sticker_due !== s.cert_due).length,
+      trainingGaps: (d.training || []).filter((t) => t.status === "gap").length,
     };
   }
 
@@ -132,7 +134,7 @@
 
   function uniqueIds(d) {
     const all = []
-      .concat(d.ncs, d.capas, d.scars, d.complaints, d.suppliers, d.changes || [])
+      .concat(d.ncs, d.capas, d.scars, d.complaints, d.suppliers, d.changes || [], d.standards || [], d.training || [])
       .map((r) => r.id);
     return all.length === new Set(all).size;
   }
