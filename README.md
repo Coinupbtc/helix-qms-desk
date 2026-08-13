@@ -24,6 +24,8 @@ chmod +x setup.sh
 # open http://127.0.0.1:8765/
 ```
 
+Or open **[the GitHub Pages build](https://coinupbtc.github.io/helix-qms-desk/)**.
+
 ## What the data is (so it is not “fake empty”)
 
 Helix Biomedical Instruments is a made-up OEM (pulse-ox simulators, defib analyzers, infusion testers). The seed is internally consistent:

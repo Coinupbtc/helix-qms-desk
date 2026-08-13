@@ -105,7 +105,7 @@
   function svgBars(items, color) {
     const max = Math.max(1, ...items.map((i) => i.n));
     const w = 320;
-    const h = 88;
+    const h = 118;
     const gap = 6;
     const bw = (w - gap * (items.length + 1)) / Math.max(1, items.length);
     const bars = items
@@ -113,11 +113,15 @@
         const bh = Math.max(2, (it.n / max) * 56);
         const x = gap + i * (bw + gap);
         const y = 64 - bh;
+        const raw = String(it.label || "");
+        const label = raw.length > 10 ? raw.split(/\s+/)[0].slice(0, 9) : raw;
+        const tip = raw.replace(/"/g, "");
         return (
-          '<g><rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + bh +
+          '<g><title>' + tip + '</title><rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + bh +
           '" rx="3" fill="' + (color || "#1e4d7b") + '"></rect>' +
-          '<text x="' + (x + bw / 2) + '" y="78" text-anchor="middle" font-size="10" fill="#5c564e">' +
-          it.label + "</text>" +
+          '<text x="' + (x + bw / 2) + '" y="90" text-anchor="middle" font-size="9" fill="#5c564e" transform="rotate(-32 ' +
+          (x + bw / 2) + ' 90)">' +
+          label + "</text>" +
           '<text x="' + (x + bw / 2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="10" fill="#1c1916">' +
           it.n + "</text></g>"
         );
