@@ -21,6 +21,12 @@
     const medianCycle = cycles.length
       ? cycles.slice().sort((a, b) => a - b)[Math.floor(cycles.length / 2)]
       : null;
+    const stickerMismatch = (d.standards || []).filter((s) => s.sticker_due !== s.cert_due).length;
+    const trainingGaps = (d.training || []).filter((t) => t.status === "gap").length;
+    const hazards = d.hazards || [];
+    const unacceptable = hazards.filter((h) => h.residual_status === "unacceptable").length;
+    const alarp = hazards.filter((h) => h.residual_status === "alarp").length;
+    const dhfOpen = (d.dhf || []).filter((x) => x.status === "open" || x.status === "pending" || x.status === "draft").length;
     return {
       openNc: openNc.length,
       openCapa: d.capas.filter((c) => c.status !== "closed").length,
@@ -34,8 +40,12 @@
       complaintsYtd: d.complaints.length,
       medianCycleDays: medianCycle,
       lateScar: d.scars.filter((s) => s.status === "late").length,
-      stickerMismatch: (d.standards || []).filter((s) => s.sticker_due !== s.cert_due).length,
-      trainingGaps: (d.training || []).filter((t) => t.status === "gap").length,
+      stickerMismatch: stickerMismatch,
+      trainingGaps: trainingGaps,
+      hazardN: hazards.length,
+      unacceptableRisk: unacceptable,
+      alarpRisk: alarp,
+      dhfOpen: dhfOpen,
     };
   }
 
@@ -134,7 +144,7 @@
 
   function uniqueIds(d) {
     const all = []
-      .concat(d.ncs, d.capas, d.scars, d.complaints, d.suppliers, d.changes || [], d.standards || [], d.training || [])
+      .concat(d.ncs, d.capas, d.scars, d.complaints, d.suppliers, d.changes || [], d.standards || [], d.training || [], d.hazards || [], d.dhf || [])
       .map((r) => r.id);
     return all.length === new Set(all).size;
   }

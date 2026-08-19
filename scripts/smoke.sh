@@ -27,4 +27,7 @@ HOME=$(brave-browser --headless --disable-gpu --no-sandbox --dump-dom --virtual-
   "http://127.0.0.1:${PORT}/" 2>/dev/null || true)
 echo "$HOME" | grep -q 'The sticker is lying' || { echo "FAIL: war-room headline missing"; exit 1; }
 echo "$HOME" | grep -q 'STK-V-204' || { echo "FAIL: voltage standard missing"; exit 1; }
-echo "SMOKE PASS — desk + assist protocols + Monday war-room"
+echo "$HOME" | grep -q 'HZ-07' || { echo "FAIL: risk walk step missing"; exit 1; }
+echo "$DOM" | grep -q 'IQ-11' || { echo "FAIL: missing risk IQ"; exit 1; }
+echo "$DOM" | grep -q 'OQ-10' || { echo "FAIL: missing residual-accept OQ"; exit 1; }
+echo "SMOKE PASS — desk + assist protocols + Monday war-room + ISO 14971"

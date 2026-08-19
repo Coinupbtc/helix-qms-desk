@@ -1,16 +1,16 @@
 {
   "meta": {
     "app": "Helix QMS Desk",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "generated": "2026-08-12",
     "company": {
       "name": "Helix Biomedical Instruments",
       "site": "St. Charles, MO (DEMO plant)",
-      "qms": "ISO 13485:2016 + ISO 9001:2015 (demonstration only)",
+      "qms": "ISO 13485:2016 + ISO 9001:2015 + ISO 14971:2019 (demonstration only)",
       "disclaimer": "SYNTHETIC demonstration dataset. Not customer, complaint, supplier, or CAPA records from any real employer."
     },
     "today": "2026-08-12",
-    "checksum": "f7d82b007516813b"
+    "checksum": "91c45714653de6b2"
   },
   "users": [
     {
@@ -1103,6 +1103,157 @@
       "chat_path": "/v1/chat/completions"
     }
   },
+  "hazards": [
+    {
+      "id": "HZ-01",
+      "pn": "PX-400",
+      "hazard": "Optical phantom drift",
+      "harm": "SpO2 training scenario reports a false saturation",
+      "situation": "Normal use, bench 1 daily check",
+      "s": 3,
+      "p_init": 3,
+      "control": "Interval shortened under CAPA-2026-06; STK-O-055 current",
+      "p_resid": 2,
+      "residual_status": "acceptable",
+      "linked": "STK-O-055",
+      "standard": "ISO 14971:2019 (demo)"
+    },
+    {
+      "id": "HZ-02",
+      "pn": "DA-900",
+      "hazard": "Harness polarity reversed at ICT",
+      "harm": "Unit ships with inverted energy channel",
+      "situation": "Manufacturing ICT miss",
+      "s": 5,
+      "p_init": 3,
+      "control": "Drawing rev C + ICT polarity \u2014 ECO-2026-009",
+      "p_resid": 1,
+      "residual_status": "acceptable",
+      "linked": "CAPA-2026-03",
+      "standard": "ISO 14971:2019 (demo)"
+    },
+    {
+      "id": "HZ-03",
+      "pn": "DA-900",
+      "hazard": "Harbor pack undervoltage",
+      "harm": "Unit drops out mid-scenario",
+      "situation": "Incoming rest-voltage with lapsed WI",
+      "s": 4,
+      "p_init": 4,
+      "control": "Open CAPA-2026-09 + Harbor SCAR (not verified)",
+      "p_resid": 3,
+      "residual_status": "alarp",
+      "linked": "CAPA-2026-09",
+      "standard": "ISO 14971:2019 (demo)"
+    },
+    {
+      "id": "HZ-04",
+      "pn": "PX-400",
+      "hazard": "Display crack after drop",
+      "harm": "Unreadable UI after misuse",
+      "situation": "Reasonably foreseeable misuse",
+      "s": 2,
+      "p_init": 2,
+      "control": "IFU drop warning; isolated trend",
+      "p_resid": 2,
+      "residual_status": "acceptable",
+      "linked": "CMP-2026-011",
+      "standard": "ISO 14971:2019 (demo)"
+    },
+    {
+      "id": "HZ-05",
+      "pn": "IT-200",
+      "hazard": "Wrong firmware checksum at ICT",
+      "harm": "Infusion analyzer ships unapproved code",
+      "situation": "Production flash",
+      "s": 5,
+      "p_init": 2,
+      "control": "ICT checksum gate \u2014 ECO-2026-016 in verification",
+      "p_resid": 2,
+      "residual_status": "alarp",
+      "linked": "CAPA-2026-08",
+      "standard": "ISO 14971:2019 (demo)"
+    },
+    {
+      "id": "HZ-06",
+      "pn": "NP-310",
+      "hazard": "Alarm wording mismatch vs IFU",
+      "harm": "Operator ignores a valid alarm",
+      "situation": "Pack cell IFU rev",
+      "s": 3,
+      "p_init": 3,
+      "control": "IFU rev E released ECO-2026-014; pack barcode ECO still open",
+      "p_resid": 2,
+      "residual_status": "alarp",
+      "linked": "CAPA-2026-10",
+      "standard": "ISO 14971:2019 (demo)"
+    },
+    {
+      "id": "HZ-07",
+      "pn": "DA-900",
+      "hazard": "Energy indication after expired voltage standard",
+      "harm": "Lab believes a defibrillator is delivering a verified energy",
+      "situation": "Final test, bench 2, MES lockout green",
+      "s": 5,
+      "p_init": 2,
+      "control": "MES lockout from ECO-2026-011 \u2014 reads sticker due, not certificate",
+      "p_resid": 4,
+      "residual_status": "unacceptable",
+      "linked": "STK-V-204 \u00b7 CAPA-2026-11 \u00b7 ECO-2026-021",
+      "standard": "ISO 14971:2019 (demo)",
+      "note": "The residual risk went UP after the 'control' shipped. Presence is not integrity."
+    }
+  ],
+  "dhf": [
+    {
+      "id": "UN-01",
+      "kind": "user_need",
+      "pn": "DA-900",
+      "text": "Final test shall not run if the voltage standard certificate is expired.",
+      "status": "open",
+      "linked": "HZ-07"
+    },
+    {
+      "id": "DI-01",
+      "kind": "design_input",
+      "pn": "DA-900",
+      "text": "MES lockout compares certificate due date (PDF / cal vendor field), not the sticker print.",
+      "status": "open",
+      "linked": "UN-01 \u00b7 ECO-2026-021"
+    },
+    {
+      "id": "DO-01",
+      "kind": "design_output",
+      "pn": "DA-900",
+      "text": "cert_due field + fail-closed if sticker_due \u2260 cert_due.",
+      "status": "draft",
+      "linked": "DI-01 \u00b7 ECO-2026-021"
+    },
+    {
+      "id": "VE-01",
+      "kind": "verification",
+      "pn": "DA-900",
+      "text": "Protocol: inject expired cert + current sticker \u2192 lockout red. Not executed.",
+      "status": "pending",
+      "linked": "DO-01"
+    },
+    {
+      "id": "VA-01",
+      "kind": "validation",
+      "pn": "DA-900",
+      "text": "Intended use: tech cannot complete a DA-900 final on bench 2 with STK-V-204 as-found.",
+      "status": "pending",
+      "linked": "UN-01"
+    },
+    {
+      "id": "UN-02",
+      "kind": "user_need",
+      "pn": "NP-310",
+      "text": "Pack cell ships the IFU revision listed on the DMR.",
+      "status": "closed",
+      "linked": "ECO-2026-014"
+    }
+  ],
   "requirements": [
     {
       "id": "R-01",
@@ -1193,6 +1344,16 @@
       "id": "R-18",
       "text": "Standards family compares sticker due vs certificate due.",
       "risk": "High \u2014 expired standard used under a current sticker"
+    },
+    {
+      "id": "R-19",
+      "text": "ISO 14971 residual risk is S\u00d7P after the named control; only QA Manager may accept residual risk.",
+      "risk": "High \u2014 unacceptable residual signed off by the wrong role"
+    },
+    {
+      "id": "R-20",
+      "text": "Design-control file traces user need \u2192 input \u2192 output \u2192 verification \u2192 validation.",
+      "risk": "High \u2014 ECO released with no DHF chain"
     }
   ],
   "audit": [
@@ -1200,7 +1361,7 @@
       "ts": "2026-08-12T07:40:00Z",
       "user": "system",
       "action": "seed_load",
-      "detail": "DEMO dataset v1.2.0 week-one"
+      "detail": "DEMO dataset v1.3.0 risk+DHF"
     }
   ]
 }

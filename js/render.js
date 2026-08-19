@@ -17,10 +17,10 @@
   function pill(status) {
     const s = String(status || "");
     let k = "watch";
-    if (s === "closed" || s === "ok" || s === "pass" || s === "Approved") k = "ok";
-    if (s === "open" || s === "linked" || s === "implementation") k = "info";
-    if (s === "overdue" || s === "late" || s === "critical" || s === "bad" || /Disqualified/i.test(s)) k = "bad";
-    if (s === "major" || s === "Conditional" || s === "watch") k = "watch";
+    if (s === "closed" || s === "ok" || s === "pass" || s === "Approved" || s === "acceptable" || s === "accepted" || s === "released") k = "ok";
+    if (s === "open" || s === "linked" || s === "implementation" || s === "draft") k = "info";
+    if (s === "overdue" || s === "late" || s === "critical" || s === "bad" || s === "unacceptable" || /Disqualified/i.test(s)) k = "bad";
+    if (s === "major" || s === "Conditional" || s === "watch" || s === "alarp" || s === "pending" || s === "in verification") k = "watch";
     return '<span class="pill ' + k + '">' + esc(s) + "</span>";
   }
 
@@ -321,6 +321,104 @@
     return body;
   }
 
+  function rpn(h) {
+    return Number(h.s || 0) * Number(h.p_resid || 0);
+  }
+
+  function risk() {
+    const d = g.HelixStore.state.data;
+    const k = g.HelixKpi.kpis();
+    const rows = (d.hazards || []).map((h) => `
+      <tr data-go="hz" data-id="${esc(h.id)}">
+        <td>${esc(h.id)}</td><td>${esc(h.pn)}</td>
+        <td>${esc(h.hazard)}</td>
+        <td>${esc(h.s)}×${esc(h.p_resid)}=${rpn(h)}</td>
+        <td>${pill(h.residual_status)}</td>
+      </tr>`).join("");
+    return `<section class="hero">
+        <p class="kicker">ISO 14971 · demonstration file</p>
+        <h1>Risk management</h1>
+        <p class="lede">Severity × residual probability after the named control. One row is <strong>unacceptable</strong> because the MES lockout reads the sticker.</p>
+      </section>
+      <div class="kpi-grid">
+        <article class="kpi alert"><div class="n">${k.unacceptableRisk}</div><div class="l">Unacceptable residual</div><p>Must not ship. Open ECO-2026-021.</p></article>
+        <article class="kpi warn"><div class="n">${k.alarpRisk}</div><div class="l">ALARP</div><p>Benefit-risk still owned by QA.</p></article>
+        <article class="kpi"><div class="n">${k.hazardN}</div><div class="l">Hazards in file</div><p>Computed RPN on each row.</p></article>
+        <article class="kpi ${k.dhfOpen ? "warn" : ""}"><div class="n">${k.dhfOpen}</div><div class="l">Open DHF items</div><p>User need through validation.</p></article>
+      </div>
+      ${toolbar("Filter hazards")}
+      ${table(["ID", "PN", "Hazard", "Residual RPN", "Status"], rows)}`;
+  }
+
+  function detailHz(id) {
+    if (g.HelixWar) g.HelixWar.mark("risk");
+    const h = (g.HelixStore.state.data.hazards || []).find((x) => x.id === id);
+    if (!h) return "<p>Not found.</p>";
+    const worse = Number(h.p_resid) > Number(h.p_init);
+    return `<section class="hero">
+        <p class="kicker">${esc(h.standard)} · ${esc(h.pn)}</p>
+        <h1>${esc(h.id)}</h1>${pill(h.residual_status)}
+        <p class="lede">${esc(h.hazard)}</p>
+      </section>
+      <section class="card prose">
+        <dl>
+          <dt>Harm</dt><dd>${esc(h.harm)}</dd>
+          <dt>Situation</dt><dd>${esc(h.situation)}</dd>
+          <dt>Initial S × P</dt><dd>${esc(h.s)} × ${esc(h.p_init)} = ${Number(h.s) * Number(h.p_init)}</dd>
+          <dt>Named control</dt><dd>${esc(h.control)}</dd>
+          <dt>Residual S × P</dt><dd>${esc(h.s)} × ${esc(h.p_resid)} = ${rpn(h)}${worse ? " — residual probability went <strong>up</strong> after the control shipped" : ""}</dd>
+          <dt>Links</dt><dd>${esc(h.linked)}</dd>
+        </dl>
+        ${h.note ? "<p>" + esc(h.note) + "</p>" : ""}
+        ${h.residual_status === "unacceptable" ? '<p><button class="btn primary" type="button" data-action="accept-risk" data-id="' + esc(h.id) + '">Accept residual (QA Manager only)</button></p>' : ""}
+        ${h.accepted_by ? "<p>Accepted by " + esc(h.accepted_by) + " on " + esc(h.accepted_on) + " (demo).</p>" : ""}
+      </section>`;
+  }
+
+  function changes() {
+    const d = g.HelixStore.state.data;
+    const ecos = (d.changes || []).map((e) => `
+      <tr data-go="eco" data-id="${esc(e.id)}">
+        <td>${esc(e.id)}</td><td>${esc(e.date)}</td>
+        <td>${esc(e.title)}</td><td>${pill(e.status)}</td><td>${esc(e.linked)}</td>
+      </tr>`).join("");
+    const kinds = { user_need: "User need", design_input: "Design input", design_output: "Design output", verification: "Verification", validation: "Validation" };
+    const dhf = (d.dhf || []).map((x) => `
+      <tr>
+        <td>${esc(x.id)}</td><td>${esc(kinds[x.kind] || x.kind)}</td>
+        <td>${esc(x.pn)}</td><td>${esc(x.text)}</td>
+        <td>${pill(x.status)}</td><td>${esc(x.linked)}</td>
+      </tr>`).join("");
+    return `<section class="hero">
+        <p class="kicker">21 CFR 820.30 · demonstration DHF</p>
+        <h1>Change control + design file</h1>
+        <p class="lede">ECOs are not the design history. The chain is user need → input → output → verification → validation. ECO-2026-021 is open because VE-01 never ran.</p>
+      </section>
+      <section class="card">
+        <h2>Engineering change orders</h2>
+        ${toolbar("Filter ECOs")}
+        ${table(["ID", "Date", "Title", "Status", "Linked"], ecos)}
+      </section>
+      <section class="card">
+        <h2>Design history (lite)</h2>
+        ${table(["ID", "Kind", "PN", "Statement", "Status", "Linked"], dhf)}
+      </section>`;
+  }
+
+  function detailEco(id) {
+    const e = (g.HelixStore.state.data.changes || []).find((x) => x.id === id);
+    if (!e) return "<p>Not found.</p>";
+    const chain = (g.HelixStore.state.data.dhf || []).filter((x) => String(x.linked || "").indexOf(e.id) >= 0);
+    return `<section class="hero"><p class="kicker">Change control</p><h1>${esc(e.id)}</h1>${pill(e.status)}
+      <p class="lede">${esc(e.title)}</p></section>
+      <section class="card prose">
+        <p>Opened ${esc(e.date)} · linked ${esc(e.linked)}</p>
+        ${e.id === "ECO-2026-021" ? "<p>This ECO is the design output for DI-01. Verification VE-01 is still pending — do not treat released MES as a risk control.</p>" : ""}
+        <h3>DHF items that name this ECO</h3>
+        ${chain.length ? "<ul>" + chain.map((x) => "<li>" + esc(x.id) + " — " + esc(x.text) + "</li>").join("") + "</ul>" : "<p>None in the lite file.</p>"}
+      </section>`;
+  }
+
   function reports() {
     const k = g.HelixKpi.kpis();
     const d = g.HelixStore.state.data;
@@ -337,6 +435,7 @@
           <li><strong>${k.openScar}</strong> open/late SCARs (${k.lateScar} late) · <strong>${k.expiringCerts}</strong> certs inside 90 days (${k.expiredCerts} expired)</li>
           <li>YTD: ${k.complaintsYtd} complaints, ${k.closedCapaYtd} CAPAs closed</li>
           <li><strong>${k.stickerMismatch}</strong> standards with sticker ≠ cert · <strong>${k.trainingGaps}</strong> training gaps</li>
+          <li><strong>${k.unacceptableRisk}</strong> unacceptable residual risks (ISO 14971) · <strong>${k.dhfOpen}</strong> open design-control items</li>
         </ul>
         <h3>NCs by month</h3>
         ${g.HelixKpi.svgBars(g.HelixKpi.byMonth(d.ncs, "date"))}
@@ -373,7 +472,7 @@
   g.HelixRender = {
     overview: function () { return g.HelixWar ? g.HelixWar.overview() : plantBoard(); },
     plantBoard: plantBoard,
-    ncs, capas, complaints, suppliers, scars, valView, reports, formNc,
-    detailNc, detailCapa, detailSup, detailCmp, detailScar, esc,
+    ncs, capas, complaints, suppliers, scars, risk, changes, valView, reports, formNc,
+    detailNc, detailCapa, detailSup, detailCmp, detailScar, detailHz, detailEco, esc,
   };
 })(window);

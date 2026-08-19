@@ -67,15 +67,21 @@
             <span>Harbor packs + training gap on WI-IN-04. ${overdue.length} overdue CAPA.</span>
           </button>
         </li>
+        <li class="${stepClass("risk")}">
+          <button type="button" class="walk-btn" data-go="hz" data-id="HZ-07">
+            <strong>4. Open the risk file — HZ-07</strong>
+            <span>Residual probability went <em>up</em> after the MES lockout. ISO 14971, not a dashboard.</span>
+          </button>
+        </li>
         <li class="${stepClass("desk")}">
           <button type="button" class="walk-btn" data-view-jump="validation">
-            <strong>4. Prove this desk — IQ / OQ / PQ</strong>
+            <strong>5. Prove this desk — IQ / OQ / PQ</strong>
             <span>Unique IDs, access control, audit trail, intended-use chain.</span>
           </button>
         </li>
         <li class="${stepClass("serve")}">
           <button type="button" class="walk-btn" data-view-jump="validation" data-scroll="serve-lab">
-            <strong>5. Prove Helix Assist the same way</strong>
+            <strong>6. Prove Helix Assist the same way</strong>
             <span>HTTP 200 is presence. Non-empty content is integrity.</span>
           </button>
         </li>
@@ -85,6 +91,7 @@
         <article class="kpi alert"><div class="n">${gaps.length}</div><div class="l">Training gaps</div><p>Controlled work with no current record.</p></article>
         <article class="kpi ${k.overdueCapa ? "alert" : ""}"><div class="n">${k.overdueCapa}</div><div class="l">Overdue CAPAs</div><p>Due date passed, still open.</p></article>
         <article class="kpi"><div class="n">${k.openNc}</div><div class="l">Open NCs</div><p>Including the Monday cal finding.</p></article>
+        <article class="kpi alert"><div class="n">${k.unacceptableRisk}</div><div class="l">Unacceptable residual</div><p>ISO 14971 — control made it worse.</p></article>
       </div>
       <section class="card">
         <h2>Calibration standards</h2>

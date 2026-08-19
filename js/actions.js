@@ -140,11 +140,24 @@
     return id;
   }
 
+  function acceptResidual(id) {
+    if (!S().canAcceptRisk()) throw new Error("permission: only QA Manager may accept residual risk");
+    const row = (S().state.data.hazards || []).find((h) => h.id === id);
+    if (!row) throw new Error("hazard not found");
+    row.residual_status = "accepted";
+    row.accepted_by = S().user().name;
+    row.accepted_on = S().state.data.meta.today;
+    S().audit("accept_residual", id);
+    S().persist();
+    return id;
+  }
+
   g.HelixApp = {
     createNc: createNc,
     createCapa: createCapa,
     closeCapa: closeCapa,
     createScar: createScar,
     createComplaint: createComplaint,
+    acceptResidual: acceptResidual,
   };
 })(window);

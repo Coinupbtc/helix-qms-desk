@@ -11,7 +11,9 @@ from pathlib import Path
 
 from seed_extras import (  # noqa: E402 — same scripts/ dir
     CAPAS_EXTRA,
+    DHF,
     ECOS_EXTRA,
+    HAZARDS,
     NCS_EXTRA,
     REQS_EXTRA,
     SERVING,
@@ -20,13 +22,13 @@ from seed_extras import (  # noqa: E402 — same scripts/ dir
 )
 
 TODAY = "2026-08-12"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 # Fictional OEM — biomedical test equipment, not a real company.
 COMPANY = {
     "name": "Helix Biomedical Instruments",
     "site": "St. Charles, MO (DEMO plant)",
-    "qms": "ISO 13485:2016 + ISO 9001:2015 (demonstration only)",
+    "qms": "ISO 13485:2016 + ISO 9001:2015 + ISO 14971:2019 (demonstration only)",
     "disclaimer": (
         "SYNTHETIC demonstration dataset. Not customer, complaint, supplier, "
         "or CAPA records from any real employer."
@@ -568,6 +570,20 @@ REQUIREMENTS = [
     {"id": "R-14", "text": "Foreign keys (NC↔CAPA↔SCAR↔complaint↔supplier) resolve or are null.", "risk": "High — broken traceability"},
 ]
 REQUIREMENTS.extend(REQS_EXTRA)
+REQUIREMENTS.extend(
+    [
+        {
+            "id": "R-19",
+            "text": "ISO 14971 residual risk is S×P after the named control; only QA Manager may accept residual risk.",
+            "risk": "High — unacceptable residual signed off by the wrong role",
+        },
+        {
+            "id": "R-20",
+            "text": "Design-control file traces user need → input → output → verification → validation.",
+            "risk": "High — ECO released with no DHF chain",
+        },
+    ]
+)
 
 CHANGE_CONTROLS = [
     {"id": "ECO-2026-014", "date": "2026-08-07", "title": "IFU NP-310 rev E alarm wording", "status": "released", "linked": "CAPA-2026-10"},
@@ -605,6 +621,7 @@ def main():
     ids = [n["id"] for n in NCS] + [c["id"] for c in CAPAS] + [s["id"] for s in SCARS]
     ids += [c["id"] for c in COMPLAINTS] + [s["id"] for s in SUPPLIERS]
     ids += [s["id"] for s in STANDARDS] + [t["id"] for t in TRAINING] + [e["id"] for e in CHANGE_CONTROLS]
+    ids += [h["id"] for h in HAZARDS] + [d["id"] for d in DHF]
     if len(ids) != len(set(ids)):
         raise SystemExit("duplicate IDs in seed")
     nc_ids = {n["id"] for n in NCS}
@@ -639,9 +656,11 @@ def main():
         "standards": STANDARDS,
         "training": TRAINING,
         "serving": SERVING,
+        "hazards": HAZARDS,
+        "dhf": DHF,
         "requirements": REQUIREMENTS,
         "audit": [
-            {"ts": "2026-08-12T07:40:00Z", "user": "system", "action": "seed_load", "detail": "DEMO dataset v1.2.0 week-one"},
+            {"ts": "2026-08-12T07:40:00Z", "user": "system", "action": "seed_load", "detail": "DEMO dataset v1.3.0 risk+DHF"},
         ],
     }
     raw = json.dumps(seed, sort_keys=True, separators=(",", ":")).encode()

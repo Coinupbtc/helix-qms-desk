@@ -1,6 +1,6 @@
 /* Live QMS state. Seed is synthetic; mutations stay in this session unless saved. */
 (function (g) {
-    const KEY = "helix-qms-desk-v3";
+    const KEY = "helix-qms-desk-v4";
 
   function clone(x) {
     return JSON.parse(JSON.stringify(x));
@@ -43,6 +43,10 @@
     return state.role === "qa_manager";
   }
 
+  function canAcceptRisk() {
+    return state.role === "qa_manager";
+  }
+
   function audit(action, detail) {
     state.data.audit.push({
       ts: new Date().toISOString(),
@@ -78,6 +82,7 @@
     user: user,
     canWrite: canWrite,
     canCloseCapa: canCloseCapa,
+    canAcceptRisk: canAcceptRisk,
     audit: audit,
     nextId: nextId,
     reset: reset,

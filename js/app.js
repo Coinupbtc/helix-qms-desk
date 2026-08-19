@@ -14,6 +14,8 @@
         (st.view === "complaints") ? "complaints" :
         (st.view === "suppliers") ? "suppliers" :
         (st.view === "scars") ? "scars" :
+        (st.view === "hz") ? "risk" :
+        (st.view === "dhf" || st.view === "eco") ? "changes" :
         st.view;
       b.classList.toggle("on", v === parent);
     });
@@ -38,6 +40,12 @@
     else if (st.view === "suppliers") html = g.HelixRender.suppliers();
     else if (st.view === "scars" && st.selected) html = g.HelixRender.detailScar(st.selected);
     else if (st.view === "scars") html = g.HelixRender.scars();
+    else if (st.view === "risk" && st.selected) html = g.HelixRender.detailHz(st.selected);
+    else if (st.view === "risk") html = g.HelixRender.risk();
+    else if (st.view === "hz") html = g.HelixRender.detailHz(st.selected);
+    else if (st.view === "changes" && st.selected) html = g.HelixRender.detailEco(st.selected);
+    else if (st.view === "changes") html = g.HelixRender.changes();
+    else if (st.view === "eco") html = g.HelixRender.detailEco(st.selected);
     else if (st.view === "validation") html = g.HelixRender.valView();
     else if (st.view === "reports") html = g.HelixRender.reports();
     main().innerHTML = html;
@@ -74,7 +82,7 @@
     }
     const link = e.target.closest("[data-go]");
     if (link) {
-      const map = { nc: "ncs", capa: "capas", cmp: "complaints", supplier: "suppliers", scar: "scars", std: "std" };
+      const map = { nc: "ncs", capa: "capas", cmp: "complaints", supplier: "suppliers", scar: "scars", std: "std", hz: "risk", eco: "changes" };
       go(map[link.getAttribute("data-go")], link.getAttribute("data-id"));
       return;
     }
@@ -120,6 +128,16 @@
       ael.href = URL.createObjectURL(blob);
       ael.download = "helix-assist-iq-oq-pq-report.json";
       ael.click();
+    }
+    if (a === "accept-risk") {
+      try {
+        g.HelixApp.acceptResidual(act.getAttribute("data-id"));
+        g.HelixStore.state.flash = "Residual accepted (QA Manager).";
+        paint();
+      } catch (ex) {
+        g.HelixStore.state.flash = ex.message;
+        paint();
+      }
     }
     if (a === "print") window.print();
     if (a === "dl-val") {

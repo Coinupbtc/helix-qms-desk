@@ -44,13 +44,16 @@
           d.complaints.length &&
           (d.standards || []).length &&
           (d.training || []).length &&
+          (d.hazards || []).length &&
+          (d.dhf || []).length &&
           d.serving;
         return {
           pass: ok,
           evidence:
             "NC " + d.ncs.length + ", CAPA " + d.capas.length + ", SCAR " + d.scars.length +
             ", SUP " + d.suppliers.length + ", CMP " + d.complaints.length +
-            ", STD " + (d.standards || []).length + ", TRN " + (d.training || []).length,
+            ", STD " + (d.standards || []).length + ", TRN " + (d.training || []).length +
+            ", HZ " + (d.hazards || []).length + ", DHF " + (d.dhf || []).length,
         };
       }),
       rec("IQ-04", "R-10", "Synthetic-data disclaimer present", () => ({
@@ -83,6 +86,19 @@
           pass: sv.approved_model === "helix-assist-0.3" && sv.eco === "ECO-2026-020",
           evidence: String(sv.approved_model || "") + " · " + String(sv.eco || ""),
         };
+      }),
+      rec("IQ-11", "R-19", "Risk file has HZ-07 as the only unacceptable residual", () => {
+        const bad = (d.hazards || []).filter((h) => h.residual_status === "unacceptable");
+        return {
+          pass: bad.length === 1 && bad[0].id === "HZ-07" && Number(bad[0].p_resid) > Number(bad[0].p_init),
+          evidence: "unacceptable n=" + bad.length + " p_resid=" + (bad[0] && bad[0].p_resid),
+        };
+      }),
+      rec("IQ-12", "R-20", "DHF chain names ECO-2026-021", () => {
+        const hits = (d.dhf || []).filter((x) => String(x.linked || "").indexOf("ECO-2026-021") >= 0);
+        const kinds = new Set((d.dhf || []).map((x) => x.kind));
+        const ok = hits.length >= 2 && kinds.has("user_need") && kinds.has("verification");
+        return { pass: ok, evidence: "eco-linked " + hits.length + " kinds=" + Array.from(kinds).join(",") };
       }),
     ];
   }
@@ -170,6 +186,43 @@
       const today = S.state.data.meta.today;
       const manual = S.state.data.capas.filter((c) => c.status !== "closed" && c.due < today).length;
       return { pass: k.overdueCapa === manual, evidence: "kpi=" + k.overdueCapa + " manual=" + manual };
+    }));
+
+    tests.push(rec("OQ-10", "R-19", "Viewer cannot accept residual risk", () => {
+      S.state.role = "viewer";
+      let blocked = false;
+      try {
+        g.HelixApp.acceptResidual("HZ-07");
+      } catch (e) {
+        blocked = /permission|QA Manager/i.test(String(e.message));
+      }
+      const still = (S.state.data.hazards || []).find((h) => h.id === "HZ-07");
+      return {
+        pass: blocked && still && still.residual_status === "unacceptable",
+        evidence: blocked ? "viewer blocked" : "viewer accepted HZ-07",
+      };
+    }));
+
+    tests.push(rec("OQ-11", "R-19", "QE cannot accept residual risk", () => {
+      S.state.role = "quality_engineer";
+      let blocked = false;
+      try {
+        g.HelixApp.acceptResidual("HZ-07");
+      } catch (e) {
+        blocked = /permission|QA Manager/i.test(String(e.message));
+      }
+      const still = (S.state.data.hazards || []).find((h) => h.id === "HZ-07");
+      return {
+        pass: blocked && still && still.residual_status === "unacceptable",
+        evidence: blocked ? "QE blocked" : "QE accepted HZ-07",
+      };
+    }));
+
+    tests.push(rec("OQ-12", "R-19", "QA Manager can accept residual (protocol)", () => {
+      S.state.role = "qa_manager";
+      g.HelixApp.acceptResidual("HZ-07");
+      const row = (S.state.data.hazards || []).find((h) => h.id === "HZ-07");
+      return { pass: row && row.residual_status === "accepted", evidence: "HZ-07=" + (row && row.residual_status) };
     }));
 
     return tests;
