@@ -8,9 +8,10 @@
 |---|---|
 | **What it is** | A working quality desk for a **fictional** biomedical test-equipment plant. Monday: sticker ≠ cert, overdue CAPA, **ISO 14971 residual that got worse after a “control”**, then IQ/OQ/PQ on the desk and an assist model. |
 | **What it’s for** | Show a hiring manager **QMS + metrology + design control + CSV** in one walk — including the rule *presence is not integrity*. |
-| **How to use it** | `./setup.sh` then open the URL. Follow the five Monday steps. Or open the [GitHub Pages build](https://coinupbtc.github.io/helix-qms-desk/). |
+| **How to use it** | `./setup.sh` then open the URL. Follow the Monday steps. Or open the [GitHub Pages build](https://coinupbtc.github.io/helix-qms-desk/). |
+| **Built with** | Browser **JavaScript** (desk), **Python** (seed only), **HTML/CSS**. No framework. CI regenerates the seed and checks ID uniqueness. |
 
-**GitHub description:** What: Monday war-room + CSV binder for a demo med-device plant (desk + assist). For: Sr QE / SQE / validation screens. How: `./setup.sh`.
+**GitHub description:** What: Monday war-room + ISO 14971 risk + CSV binder (JS desk). For: Sr QE / SQE / validation screens. How: `./setup.sh`.
 
 > All names, lots, complaints, standards, and model logs are **synthetic**. This is not BC Group (or any real) QMS data.
 
