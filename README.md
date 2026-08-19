@@ -2,6 +2,8 @@
 
 ![Monday war-room](docs/screenshots/overview.png)
 
+![CI](https://github.com/Coinupbtc/helix-qms-desk/actions/workflows/ci.yml/badge.svg)
+
 ## At a glance
 
 | | |
