@@ -15,7 +15,7 @@
 
 **GitHub description:** What: Monday war-room + ISO 14971 risk + CSV binder (JS desk). For: Sr QE / SQE / validation screens. How: `./setup.sh`.
 
-> All names, lots, complaints, standards, and model logs are **synthetic**. This is not BC Group (or any real) QMS data.
+> All names, lots, complaints, standards, and model logs are **synthetic**. Fictional OEM. Not any real company's QMS.
 
 ## Try it
 
