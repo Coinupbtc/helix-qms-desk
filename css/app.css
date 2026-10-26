@@ -127,6 +127,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .walk-btn span, .walk-btn em, .rowlink.static span, .rowlink.static em {
   display: block; color: var(--muted); font-size: 14px; font-style: normal;
 }
+/* Emphasis inside a step's line stays inline (step 4: "went up"). */
+.walk-btn span em { display: inline; color: inherit; font-size: inherit; font-style: italic; }
 .walk-step.done .walk-btn { border-color: var(--ok); background: var(--okbg); }
 .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .compare-col { padding: 8px; }
