@@ -206,8 +206,8 @@
     const c = g.HelixStore.state.data.capas.find((x) => x.id === id);
     if (!c) return "<p>Not found.</p>";
     const steps = [
-      ["D1 Problem", c.problem],
-      ["D2 Team", c.d2_team],
+      ["D1 Team", c.d2_team],
+      ["D2 Problem", c.problem],
       ["D3 Containment", c.d3_containment],
       ["D4 Root cause", c.d4_root_cause],
       ["D5 Action", c.d5_action],
